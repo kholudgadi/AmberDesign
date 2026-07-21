@@ -19,7 +19,7 @@ Backend Development
 Mohammed
 fahad nasr 
 **QA & Documentation**
-
+jorry 
 
 ## 🛠 Tech Stack
 
