@@ -16,7 +16,7 @@ Figma:{ (https://www.figma.com/make/IZfuWjelBs14ashqjTDgrj/Replicate-Figma-Desig
   Ghaith
   
 ** Backend Development** 
-mohmmad 
+mohammed 
 fahad nasr 
 **QA & Documentation**
 jorry 
