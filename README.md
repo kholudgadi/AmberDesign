@@ -13,10 +13,10 @@ Figma:{ (https://www.figma.com/make/IZfuWjelBs14ashqjTDgrj/Replicate-Figma-Desig
 - lama uI Designer
 - Adwaa UI Designer
 **Frontend Development**
-Ghaith 
+  Ghaith
   
-Backend Development 
-Mohammed
+** Backend Development** 
+mohmmad 
 fahad nasr 
 **QA & Documentation**
 jorry 
