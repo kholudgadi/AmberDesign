@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'user_onboarding_screen.dart';
 
 // ---- Color palette ----
 class AppColors {
@@ -193,7 +194,12 @@ class _RoleCards extends StatelessWidget {
             backgroundColor: Colors.white.withOpacity(0.28),
             borderColor: Colors.white.withOpacity(0.1), 
             onTap: () {
-              debugPrint("Navigating to Onboarding Screens...");
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserOnboardingScreen(),
+                ),
+              );
             },
           ),
           
