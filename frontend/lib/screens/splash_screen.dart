@@ -1,3 +1,4 @@
+import 'role_selection_screen.dart';
 import 'package:flutter/material.dart';
 
 /// A screen that displays the initial splash UI.
@@ -43,8 +44,11 @@ class SplashScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
                   child: ElevatedButton(
                     onPressed: () {
-                      // TODO: Implement navigation logic to the Login Screen.
-                      debugPrint("Next button pressed");
+                      // Navigates to the Role Selection Screen with a default sliding animation.
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       // Apply opacity to the background color for a translucent effect.

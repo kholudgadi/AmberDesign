@@ -18,6 +18,7 @@ class AmberDesignApp extends StatelessWidget {
       theme: ThemeData(
         // We will update this later when we set up app_colors.dart
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange), 
+        fontFamily: 'NotoSansArabic',
         useMaterial3: true,
       ),
       // 2. Here we tell the app to start with the SplashScreen
