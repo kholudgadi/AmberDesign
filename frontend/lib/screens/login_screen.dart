@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../widgets/custom_top_bar.dart';
 import '../widgets/custom_text_field.dart';
+import '../screens/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool isDesigner;
@@ -164,7 +165,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 16),
                           GestureDetector(
                             onTap: () {
-                              debugPrint("الانتقال لإنشاء حساب جديد...");
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SignupScreen(isDesigner: widget.isDesigner),
+                                ),
+                              ); 
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),

@@ -8,6 +8,9 @@ class CustomTextField extends StatelessWidget {
   final bool obscureText;
   final VoidCallback? onTogglePassword;
   final TextInputType keyboardType;
+  
+  final TextEditingController? controller;
+  final void Function(String)? onChanged;
 
   const CustomTextField({
     super.key,
@@ -17,6 +20,8 @@ class CustomTextField extends StatelessWidget {
     this.obscureText = false,
     this.onTogglePassword,
     this.keyboardType = TextInputType.text,
+    this.controller,
+    this.onChanged,
   });
 
   @override
@@ -53,6 +58,8 @@ class CustomTextField extends StatelessWidget {
             ],
           ),
           child: TextField(
+            controller: controller,
+            onChanged: onChanged,
             obscureText: obscureText,
             keyboardType: keyboardType,
             style: const TextStyle(color: AppColors.textDark),
