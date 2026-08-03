@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'user_onboarding_screen.dart';
+import 'login_screen.dart';
 
 // ---- Color palette ----
 class AppColors {
@@ -24,7 +25,7 @@ class RoleSelectionScreen extends StatelessWidget {
             Image.asset('assets/images/splash_bg.jpg', fit: BoxFit.cover),
 
             // Soft overlay
-            Container(color: AppColors.cream.withOpacity(0.40)),
+            Container(color: Colors.white.withOpacity(0.45)),
 
             SafeArea(
               child: Column(
@@ -91,7 +92,12 @@ class _TopBarState extends State<_TopBar> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color.fromRGBO(217, 217, 217, 0.50).withOpacity(0.6),
+                color: const Color.fromRGBO(
+                  217,
+                  217,
+                  217,
+                  0.50,
+                ).withOpacity(0.6),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: const Color.fromRGBO(38, 23, 50, 0.10),
@@ -111,7 +117,9 @@ class _TopBarState extends State<_TopBar> {
                           color: isArabic
                               ? AppColors.textDark
                               : AppColors.textMuted.withOpacity(0.6),
-                          fontWeight: isArabic ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isArabic
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 14,
                         ),
                       ),
@@ -131,7 +139,9 @@ class _TopBarState extends State<_TopBar> {
                           color: !isArabic
                               ? AppColors.textDark
                               : AppColors.textMuted.withOpacity(0.6),
-                          fontWeight: !isArabic ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: !isArabic
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 14,
                         ),
                       ),
@@ -192,7 +202,7 @@ class _RoleCards extends StatelessWidget {
             title: 'دخول كمستخدم',
             subtitle: 'تصفحي وطلب فساتين مميزة',
             backgroundColor: Colors.white.withOpacity(0.28),
-            borderColor: Colors.white.withOpacity(0.1), 
+            borderColor: Colors.white.withOpacity(0.1),
             onTap: () {
               Navigator.push(
                 context,
@@ -202,7 +212,7 @@ class _RoleCards extends StatelessWidget {
               );
             },
           ),
-          
+
           const SizedBox(height: 24),
 
           // button 2 (Designer)
@@ -211,9 +221,14 @@ class _RoleCards extends StatelessWidget {
             title: 'دخول كمصمم',
             subtitle: 'اعرض أعمالك واحصل على طلبات',
             backgroundColor: AppColors.textDark.withOpacity(0.03),
-            borderColor: const Color.fromRGBO(38, 23, 50, 1).withOpacity(0.1), 
+            borderColor: const Color.fromRGBO(38, 23, 50, 1).withOpacity(0.1),
             onTap: () {
-              debugPrint("Navigating to Designer Login/Signup...");
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(isDesigner: true),
+                ),
+              );
             },
           ),
         ],
@@ -261,10 +276,7 @@ class _RoleCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: borderColor, 
-              width: 1.2,
-            ),
+            border: Border.all(color: borderColor, width: 1.2),
           ),
           child: Row(
             children: [

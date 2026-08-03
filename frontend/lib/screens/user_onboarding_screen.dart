@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login_screen.dart'; 
 
 class UserOnboardingScreen extends StatefulWidget {
   const UserOnboardingScreen({super.key});
@@ -11,7 +12,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // قائمة تحتوي على بيانات الشاشات الثلاث
+  // Data for the onboarding screens, including images, titles, subtitles, and button labels.
   final List<Map<String, String>> _onboardingData = [
     {
       "image": "assets/images/Fashion.png",
@@ -41,14 +42,14 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // إجبار الاتجاه من اليمين لليسار لضمان أماكن الأزرار
+    // The main structure of the onboarding screen, including a PageView for swiping through onboarding pages and navigation buttons.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.black, // خلفية سوداء احتياطية
+        backgroundColor: Colors.black, 
         body: Stack(
           children: [
-            // 1. PageView للصور والنصوص المتغيرة
+            // page view for onboarding screens
             PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
@@ -61,13 +62,13 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                 return Stack(
                   fit: StackFit.expand,
                   children: [
-                    // الصورة الخلفية
+                    // image for the onboarding screen
                     Image.asset(
                       _onboardingData[index]["image"]!,
                       fit: BoxFit.cover,
                     ),
                     
-                    // تدرج لوني (Gradient) أسفل الصورة لزيادة وضوح النصوص
+                    // Overlay to darken the image for better text visibility
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -81,9 +82,9 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                       ),
                     ),
                     
-                    // النصوص (العنوان والتفاصيل)
+                    // Positioned text for title and subtitle
                     Positioned(
-                      bottom: 155, // رفع النصوص لتوفير مساحة للأزرار
+                      bottom: 155, 
                       left: 24,
                       right: 24,
                       child: Column(
@@ -116,14 +117,14 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
               },
             ),
 
-            // 2. العناصر الثابتة (النقاط والأزرار) فوق الـ PageView
+            // Positioned widget for pagination dots and navigation buttons at the bottom of the screen.
             Positioned(
               bottom: 45,
               left: 24,
               right: 24,
               child: Column(
                 children: [
-                  // نقاط التصفح (Pagination Dots)
+                  // Pagination dots indicating the current onboarding page.
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
@@ -145,11 +146,10 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                   
                   const SizedBox(height: 24),
 
-                  // صف الأزرار (الزر الرئيسي + زر الرجوع)
+                  // Row containing the main navigation button and a back button (if applicable) for the onboarding screens.
                   Row(
                     children: [
-                      // الزر الرئيسي (التالي / ابدأ الآن)
-                      // أخذ مساحة Expanded ليتمدد بناءً على توفر زر الرجوع
+                      // Main navigation button to proceed to the next onboarding screen or finish the onboarding process.
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
@@ -159,12 +159,16 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                                 curve: Curves.easeInOut,
                               );
                             } else {
-                              // مسار الانتقال بعد انتهاء الشاشات الترحيبية
-                              debugPrint("انتقال إلى شاشة الدخول أو التسجيل...");
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginScreen(isDesigner: false),
+                                ),
+                              );
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF261732).withOpacity(0.90), // لون الزر الغامق
+                            backgroundColor: const Color(0xFF261732).withOpacity(0.90), 
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
@@ -182,7 +186,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                         ),
                       ),
                       
-                      // زر الرجوع الدائري (يظهر فقط من الصفحة الثانية وما بعدها)
+                      //
                       if (_currentPage > 0) ...[
                         const SizedBox(width: 16),
                         GestureDetector(
@@ -197,10 +201,10 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                             height: 52,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.2), // شفافية رمادية
+                              color: Colors.white.withOpacity(0.2),
                             ),
                             child: const Icon(
-                              Icons.arrow_forward, // سهم يمين لأن الاتجاه RTL
+                              Icons.arrow_forward, 
                               color: Colors.white,
                               size: 24,
                             ),
