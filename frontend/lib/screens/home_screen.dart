@@ -6,6 +6,7 @@ import '../widgets/custom_search_bar.dart';
 import '../widgets/category_card.dart';
 import '../widgets/designer_card.dart';
 import '../widgets/mini_designer_card.dart';
+import '../screens/request_design_view.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -114,9 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: 16,
                     ),
                     child: _currentIndex == 1
-                        ? _buildSearchTab() // if the search tab is selected
+                        ? _buildSearchTab()
+                        : _currentIndex == 2
+                        ? const RequestDesignView()
                         : _currentIndex == 0
-                        ? _buildHomeTab() // if the home tab is selected
+                        ? _buildHomeTab()
                         : Center(
                             child: Padding(
                               padding: const EdgeInsets.only(top: 100),
@@ -203,32 +206,64 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAppBar() {
-    return Padding(
+    // 1. هل نحن في صفحة فرعية؟ (أي صفحة غير الرئيسية اللي رقمها 0)
+    bool isSubPage = _currentIndex != 0;
+
+    // 2. تحديد عنوان الصفحة تلقائياً بناءً على الـ Index الحالي
+    String pageTitle = 'Amber design'; // الافتراضي للرئيسية
+    if (_currentIndex == 1) pageTitle = 'البحث';
+    if (_currentIndex == 2) pageTitle = 'طلب تصميم';
+    if (_currentIndex == 3) pageTitle = 'طلباتي';
+    if (_currentIndex == 4) pageTitle = 'حسابي';
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.textMuted.withOpacity(0.15), 
+            width: 1.0, 
+          ),
+        ),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // 3. الزر الأيمن: يتغير بين سهم الرجوع والقائمة
           IconButton(
-            icon: const Icon(Icons.menu, color: AppColors.textDark, size: 32),
-            onPressed: () {},
+            icon: Icon(
+              isSubPage ? Icons.arrow_back : Icons.menu, 
+              color: AppColors.textDark, 
+              size: 28
+            ),
+            onPressed: () {
+              if (isSubPage) {
+                // ضغطة السهم ترجعنا للرئيسية
+                setState(() => _currentIndex = 0);
+              } else {
+                // هنا بنبرمج القائمة الجانبية بعدين
+              }
+            },
           ),
-          const Text(
-            'Amber design',
+          
+          // 4. العنوان في المنتصف (يتغير تلقائياً)
+          Text(
+            pageTitle,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.textDark,
-              letterSpacing: 1.2,
+              letterSpacing: isSubPage ? 0 : 1.2,
             ),
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none,
-              color: AppColors.textDark,
-              size: 28,
-            ),
-            onPressed: () {},
-          ),
+          
+          // 5. الزر الأيسر: الإشعارات في الرئيسية، ومساحة مخفية في باقي الصفحات
+          isSubPage
+              ? const SizedBox(width: 48) 
+              : IconButton(
+                  icon: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 28),
+                  onPressed: () {},
+                ),
         ],
       ),
     );
@@ -239,13 +274,13 @@ class _HomeScreenState extends State<HomeScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: 80, 
-          height: 1.5, 
+          width: 80,
+          height: 1.5,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.transparent, 
-                AppColors.textMuted.withOpacity(0.8), 
+                Colors.transparent,
+                AppColors.textMuted.withOpacity(0.8),
               ],
               begin: Alignment.centerRight,
               end: Alignment.centerLeft,
@@ -271,8 +306,8 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.textMuted.withOpacity(0.8), 
-                Colors.transparent, 
+                AppColors.textMuted.withOpacity(0.8),
+                Colors.transparent,
               ],
               begin: Alignment.centerRight,
               end: Alignment.centerLeft,

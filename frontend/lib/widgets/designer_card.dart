@@ -32,11 +32,15 @@ class DesignerCard extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            bottom: 0, left: 0, right: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
             child: Container(
               height: 80,
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
@@ -46,7 +50,8 @@ class DesignerCard extends StatelessWidget {
             ),
           ),
           Positioned(
-            bottom: 16, right: 16,
+            bottom: 16,
+            right: 16,
             child: Row(
               children: [
                 CircleAvatar(
@@ -60,7 +65,11 @@ class DesignerCard extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Row(
                       children: [
@@ -68,17 +77,21 @@ class DesignerCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '$rating • $category',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ], 
+              ],
             ),
           ),
           Positioned(
-            bottom: 16, left: 16,
+            bottom: 16,
+            left: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
@@ -87,7 +100,11 @@ class DesignerCard extends StatelessWidget {
               ),
               child: const Text(
                 'طلب تصميم',
-                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

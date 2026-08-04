@@ -76,7 +76,7 @@ class _TopBarState extends State<_TopBar> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Directionality(
-        textDirection: TextDirection.ltr,
+        textDirection: TextDirection.rtl,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

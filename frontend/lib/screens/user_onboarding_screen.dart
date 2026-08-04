@@ -204,7 +204,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                               color: Colors.white.withOpacity(0.2),
                             ),
                             child: const Icon(
-                              Icons.arrow_forward, 
+                              Icons.arrow_back, 
                               color: Colors.white,
                               size: 24,
                             ),
