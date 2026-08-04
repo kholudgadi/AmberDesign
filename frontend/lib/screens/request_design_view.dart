@@ -10,17 +10,14 @@ class RequestDesignView extends StatefulWidget {
 }
 
 class _RequestDesignViewState extends State<RequestDesignView> {
-  // 1. جعلناه Nullable (يعني في البداية لا أزياء ولا ديكور محدد)
   bool? isFashion;
 
-  // --- متغيرات حفظ التحديد (أزياء) - كلها تبدأ بـ null ---
   String? selectedDressType;
   String? selectedSize;
   String? selectedColor;
   String? selectedFabric;
   String? selectedLength;
 
-  // --- متغيرات حفظ التحديد (ديكور) - كلها تبدأ بـ null ---
   String? selectedProjectType;
   String? selectedStyle;
   String? selectedBudget;
@@ -31,13 +28,10 @@ class _RequestDesignViewState extends State<RequestDesignView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // أزرار التبديل الأساسية (أزياء / ديكور)
         _buildToggleButtons(),
         const SizedBox(height: 32),
 
-        // 2. إخفاء باقي الشاشة حتى يتم اختيار قسم
         if (isFashion != null) ...[
-          // عرض الخيارات بناءً على التحديد
           if (isFashion == true)
             _buildFashionOptions()
           else
@@ -45,7 +39,6 @@ class _RequestDesignViewState extends State<RequestDesignView> {
 
           const SizedBox(height: 24),
 
-          // حقل التفاصيل الإضافية
           const Text(
             'تفاصيل إضافية',
             style: TextStyle(
@@ -58,7 +51,6 @@ class _RequestDesignViewState extends State<RequestDesignView> {
           _buildDetailsField(),
           const SizedBox(height: 24),
 
-          // رفع الملفات المرجعية
           const Text(
             'رفع ملفات مرجعية',
             style: TextStyle(
@@ -71,11 +63,9 @@ class _RequestDesignViewState extends State<RequestDesignView> {
           _buildUploadBox(),
           const SizedBox(height: 32),
 
-          // زر التالي
           _buildNextButton(),
           const SizedBox(height: 40),
         ] else ...[
-          // رسالة ترحيبية تظهر قبل اختيار القسم
           Center(
             child: Padding(
               padding: const EdgeInsets.only(top: 50),
@@ -93,28 +83,23 @@ class _RequestDesignViewState extends State<RequestDesignView> {
     );
   }
 
-  // ---- الويدجتس الفرعية ----
-
   Widget _buildToggleButtons() {
     return Row(
       children: [
-        // زر ديكور
         Expanded(
           child: GestureDetector(
             onTap: () => setState(() => isFashion = false),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200), // حركة ناعمة
+              duration: const Duration(milliseconds: 200), 
               height: 50,
               decoration: BoxDecoration(
                 color: isFashion == false
                     ? AppColors.textDark
-                    // لون الخلفية اللي اخترته للوضع غير المحدد
                     : const Color.fromRGBO(217, 217, 217, 1).withOpacity(0.3),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
                   color: isFashion == false
                       ? AppColors.textDark
-                      // لون الحدود اللي اخترته للوضع غير المحدد
                       : AppColors.textDark.withOpacity(0.15),
                 ),
               ),
@@ -133,25 +118,22 @@ class _RequestDesignViewState extends State<RequestDesignView> {
           ),
         ),
         
-        const SizedBox(width: 16), // 💡 المسافة المطلوبة بين الزرين
+        const SizedBox(width: 16), 
         
-        // زر أزياء
         Expanded(
           child: GestureDetector(
             onTap: () => setState(() => isFashion = true),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200), // حركة ناعمة
+              duration: const Duration(milliseconds: 200), 
               height: 50,
               decoration: BoxDecoration(
                 color: isFashion == true
                     ? AppColors.textDark
-                    // لون الخلفية اللي اخترته للوضع غير المحدد
                     : const Color.fromRGBO(217, 217, 217, 1).withOpacity(0.3),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
                   color: isFashion == true
                       ? AppColors.textDark
-                      // لون الحدود اللي اخترته للوضع غير المحدد
                       : AppColors.textDark.withOpacity(0.15),
                 ),
               ),
@@ -173,7 +155,6 @@ class _RequestDesignViewState extends State<RequestDesignView> {
     );
   }
 
-  // --- خيارات الأزياء ---
   Widget _buildFashionOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,7 +212,6 @@ class _RequestDesignViewState extends State<RequestDesignView> {
     );
   }
 
-  // --- خيارات الديكور ---
   Widget _buildInteriorOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +263,6 @@ class _RequestDesignViewState extends State<RequestDesignView> {
     );
   }
 
-  // --- 3. تعديل الدالة لقبول القيم الفارغة (String?) ---
   Widget _buildSelectionGroup(
     String title,
     List<String> options,
@@ -305,7 +284,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
             runSpacing: 10,
             children: options.map((option) {
               final isSelected =
-                  option == selectedValue; // إذا كان null ماراح يساوي أي خيار
+                  option == selectedValue; 
               return GestureDetector(
                 onTap: () => onSelect(option),
                 child: AnimatedContainer(
@@ -421,7 +400,6 @@ class _RequestDesignViewState extends State<RequestDesignView> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          // سيتم برمجة الانتقال لصفحة الدفع لاحقاً
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.textDark,

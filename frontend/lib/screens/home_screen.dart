@@ -7,7 +7,7 @@ import '../widgets/category_card.dart';
 import '../widgets/designer_card.dart';
 import '../widgets/mini_designer_card.dart';
 import '../screens/request_design_view.dart';
-
+import '../screens/my_orders_view.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -118,6 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? _buildSearchTab()
                         : _currentIndex == 2
                         ? const RequestDesignView()
+                        : _currentIndex == 3
+                        ? const MyOrdersView()
                         : _currentIndex == 0
                         ? _buildHomeTab()
                         : Center(
@@ -206,11 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAppBar() {
-    // 1. هل نحن في صفحة فرعية؟ (أي صفحة غير الرئيسية اللي رقمها 0)
     bool isSubPage = _currentIndex != 0;
 
-    // 2. تحديد عنوان الصفحة تلقائياً بناءً على الـ Index الحالي
-    String pageTitle = 'Amber design'; // الافتراضي للرئيسية
+    String pageTitle = 'Amber design'; 
     if (_currentIndex == 1) pageTitle = 'البحث';
     if (_currentIndex == 2) pageTitle = 'طلب تصميم';
     if (_currentIndex == 3) pageTitle = 'طلباتي';
@@ -229,7 +229,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 3. الزر الأيمن: يتغير بين سهم الرجوع والقائمة
           IconButton(
             icon: Icon(
               isSubPage ? Icons.arrow_back : Icons.menu, 
@@ -238,15 +237,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             onPressed: () {
               if (isSubPage) {
-                // ضغطة السهم ترجعنا للرئيسية
                 setState(() => _currentIndex = 0);
               } else {
-                // هنا بنبرمج القائمة الجانبية بعدين
               }
             },
           ),
           
-          // 4. العنوان في المنتصف (يتغير تلقائياً)
           Text(
             pageTitle,
             style: TextStyle(
@@ -257,7 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           
-          // 5. الزر الأيسر: الإشعارات في الرئيسية، ومساحة مخفية في باقي الصفحات
           isSubPage
               ? const SizedBox(width: 48) 
               : IconButton(
