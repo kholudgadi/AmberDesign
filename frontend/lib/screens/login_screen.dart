@@ -3,6 +3,7 @@ import '../utils/app_colors.dart';
 import '../widgets/custom_top_bar.dart';
 import '../widgets/custom_text_field.dart';
 import '../screens/signup_screen.dart';
+import '../screens/home_screen.dart'; 
 
 class LoginScreen extends StatefulWidget {
   final bool isDesigner;
@@ -109,6 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ElevatedButton(
                             onPressed: () {
                               debugPrint("تسجيل الدخول...");
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const HomeScreen(), // Navigates to the HomeScreen
+                                ),
+                                (Route<dynamic> route) => false, // delete all previous routes
+                              );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color.fromRGBO(

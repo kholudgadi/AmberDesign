@@ -15,19 +15,19 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
   // Data for the onboarding screens, including images, titles, subtitles, and button labels.
   final List<Map<String, String>> _onboardingData = [
     {
-      "image": "assets/images/Fashion.png",
+      "image": "assets/images/evening.png",
       "title": "اكتشف مصممي الأزياء",
       "subtitle": "تصفح أفضل مصممي الفساتين من سهرة وزواج وحفلات.",
       "button": "التالي",
     },
     {
-      "image": "assets/images/Fashion(1).png",
+      "image": "assets/images/wedding.png",
       "title": "اطلب تصميمك",
       "subtitle": "حدد نوع فستانك والمواصفات وسيتولى المصمم الباقي.",
       "button": "التالي",
     },
     {
-      "image": "assets/images/Fashion(2).png",
+      "image": "assets/images/party.png",
       "title": "استلمي وقيّمي",
       "subtitle": "استلمي فستانك المميز وشاركي تجربتك مع المجتمع.",
       "button": "ابدأ الآن",

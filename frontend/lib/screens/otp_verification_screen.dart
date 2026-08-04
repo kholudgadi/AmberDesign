@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/custom_top_bar.dart';
+import 'home_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -146,13 +147,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                         const SizedBox(height: 40),
 
-                        // زر التأكيد
                         ElevatedButton(
                           onPressed: _isOtpComplete
                               ? () {
                                   String otpCode = _controllers.map((c) => c.text).join();
                                   debugPrint("الرمز المدخل هو: $otpCode");
-                                  
+                                  Navigator.pushAndRemoveUntil(
+                                    // Navigates to the HomeScreen and removes all previous routes from the stack.
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const HomeScreen(),
+                                    ),
+                                    (Route<dynamic> route) => false, // delete all previous routes
+                                  );
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
