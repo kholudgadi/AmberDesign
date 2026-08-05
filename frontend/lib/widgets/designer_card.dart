@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Large visual card used to feature a designer and their design category.
 class DesignerCard extends StatelessWidget {
   final String name;
   final String rating;
@@ -18,6 +19,7 @@ class DesignerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The gradient preserves text contrast over the designer's cover image.
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       height: 180,

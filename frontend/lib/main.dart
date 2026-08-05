@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'utils/app_colors.dart';
 
 void main() {
+  // Starts the Flutter widget tree with the application's root configuration.
   runApp(const AmberDesignApp());
 }
 
@@ -14,6 +15,7 @@ class AmberDesignApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Defines the app-wide theme and the first screen shown to the user.
     return MaterialApp(
       title: 'Amber Design',
       debugShowCheckedModeBanner: false,

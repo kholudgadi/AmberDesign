@@ -10,11 +10,13 @@ class AppColors {
 }
 
 /// Screen allowing the user to select their account type (User or Designer).
+/// Lets a visitor choose the customer or designer onboarding path.
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Composes the page from dedicated private widgets for each visual section.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -69,10 +71,12 @@ class _TopBar extends StatefulWidget {
 }
 
 class _TopBarState extends State<_TopBar> {
+  // Tracks the visually selected language option; content localization is not implemented here.
   bool isArabic = true;
 
   @override
   Widget build(BuildContext context) {
+    // Applies RTL layout while the Arabic option is active.
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Directionality(
@@ -189,6 +193,7 @@ class _Heading extends StatelessWidget {
 }
 
 // ---- Role selection cards ----
+/// Renders the two role choices that route users into distinct account flows.
 class _RoleCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -238,6 +243,7 @@ class _RoleCards extends StatelessWidget {
 }
 
 // ---- Reusable Role Card Component ----
+/// Reusable selectable role card with image, label, and navigation callback.
 class _RoleCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -257,6 +263,7 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The whole card is tappable so users can select a role from any visible area.
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),

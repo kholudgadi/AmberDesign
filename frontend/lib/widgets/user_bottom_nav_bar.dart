@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
+/// Bottom navigation controlled by the parent screen's selected tab state.
 class UserBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -13,6 +14,7 @@ class UserBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Removes the system bottom inset because this widget supplies its own padding.
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cream,

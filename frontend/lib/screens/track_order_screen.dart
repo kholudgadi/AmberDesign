@@ -2,7 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
+import '../widgets/glass_card.dart';
 
+/// Visualizes a selected order's current status as a four-step timeline.
 class TrackOrderScreen extends StatelessWidget {
   final Map<String, dynamic> order;
 
@@ -10,6 +12,7 @@ class TrackOrderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Converts the stored status label into the index used by the timeline UI.
     int currentStepIndex = 0;
     switch (order['status']) {
       case 'تم التقديم':
@@ -54,8 +57,8 @@ class TrackOrderScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
-                  //
-                  _buildGlassCard(
+                  // Summarizes the selected order and its current status.
+                  GlassCard(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 16,
@@ -109,7 +112,8 @@ class TrackOrderScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  _buildGlassCard(
+                  // Visual timeline of the order's progress through each stage.
+                  GlassCard(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +166,8 @@ class TrackOrderScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  _buildGlassCard(
+                  // Provides the assigned designer's details and contact action.
+                  GlassCard(
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
@@ -212,39 +217,6 @@ class TrackOrderScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGlassCard({required Widget child, required EdgeInsets padding}) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 15,
-            spreadRadius: 0,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: const Color.fromRGBO(0, 0, 0, 1).withOpacity(0.05),
-              ),
-            ),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildTimelineStep({
     required String title,
     String? subtitle,
@@ -252,6 +224,7 @@ class TrackOrderScreen extends StatelessWidget {
     required bool isLastCompleted,
     bool isLastStep = false,
   }) {
+    // Renders the marker, connector, and optional detail for one timeline stage.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -273,14 +246,14 @@ class TrackOrderScreen extends StatelessWidget {
               child: isCompleted && !isLastCompleted
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
                   : (isLastCompleted
-                        ? Container(
-                            margin: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          )
-                        : null),
+                      ? Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        )
+                      : null),
             ),
             if (!isLastStep)
               Container(

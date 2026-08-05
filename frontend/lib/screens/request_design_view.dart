@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
+/// Adaptive request form for fashion and interior-design services.
 class RequestDesignView extends StatefulWidget {
   const RequestDesignView({super.key});
 
@@ -10,6 +11,7 @@ class RequestDesignView extends StatefulWidget {
 }
 
 class _RequestDesignViewState extends State<RequestDesignView> {
+  // `null` means no category is selected; `true` selects fashion and `false` selects interior design.
   bool? isFashion;
 
   String? selectedDressType;
@@ -25,6 +27,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
 
   @override
   Widget build(BuildContext context) {
+    // Reveals only the fields that apply to the selected design category.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -84,6 +87,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildToggleButtons() {
+    // Updates the category state and animates the active option.
     return Row(
       children: [
         Expanded(
@@ -156,6 +160,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildFashionOptions() {
+    // Collects specifications that are unique to a fashion design request.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -213,6 +218,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildInteriorOptions() {
+    // Collects specifications that are unique to an interior design request.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -269,6 +275,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
     String? selectedValue,
     Function(String) onSelect,
   ) {
+    // Reusable selectable-chip group that reports the choice through its callback.
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -329,6 +336,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildDetailsField() {
+    // Provides free-form context that cannot be captured by the predefined options.
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -360,6 +368,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildUploadBox() {
+    // Placeholder upload affordance for reference images or other files.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -396,6 +405,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildNextButton() {
+    // Enables progression only after a service category has been selected.
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(

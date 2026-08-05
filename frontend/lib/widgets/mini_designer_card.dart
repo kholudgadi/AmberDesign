@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
+/// Compact designer summary used in horizontally constrained lists and search results.
 class MiniDesignerCard extends StatelessWidget {
   final String name;
   final String rating;
@@ -18,6 +19,7 @@ class MiniDesignerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Uses a blur layer to match the shared glass visual language.
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),

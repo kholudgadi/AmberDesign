@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
+/// Glass-styled search input that reports query changes and exposes a clear action.
 class CustomSearchBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onChanged;
@@ -16,6 +17,7 @@ class CustomSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuilds with a clear button whenever the parent updates the query state.
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(50),

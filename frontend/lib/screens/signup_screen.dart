@@ -5,6 +5,7 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/app_background.dart';
 import 'otp_verification_screen.dart';
 
+/// Registration form that creates either a customer or designer account.
 class SignupScreen extends StatefulWidget {
   final bool isDesigner;
 
@@ -15,10 +16,12 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  // Controls the two independent password-visibility buttons.
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
   // created TextEditingController for each input field to manage and read the text
+  // Controllers provide the latest field values for live form validation.
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -31,6 +34,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void initState() {
+    // Re-check validity whenever any registration field changes.
     super.initState();
     // Adding listeners to each controller to check form validity whenever the text changes
     _nameController.addListener(_checkFormValidity);
@@ -42,6 +46,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // This method checks if all input fields are filled and updates the _isFormValid state accordingly
   void _checkFormValidity() {
+    // Keeps the continue button disabled until all required values are valid.
     bool isValid =
         _nameController.text.isNotEmpty &&
         _emailController.text.isNotEmpty &&
@@ -59,6 +64,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    // Releases every controller owned by this state object.
     // Dispose of the controllers when the widget is removed from the widget tree to free up resources
     _nameController.dispose();
     _emailController.dispose();
@@ -70,6 +76,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Uses the current validity state to control whether registration can continue.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(

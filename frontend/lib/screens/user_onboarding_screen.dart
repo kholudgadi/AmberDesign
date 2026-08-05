@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart'; 
 
+/// Three-step introduction that explains the customer journey before sign-in.
 class UserOnboardingScreen extends StatefulWidget {
   const UserOnboardingScreen({super.key});
 
@@ -9,6 +10,7 @@ class UserOnboardingScreen extends StatefulWidget {
 }
 
 class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
+  // Controls programmatic forward and backward navigation between onboarding pages.
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -36,6 +38,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
 
   @override
   void dispose() {
+    // Releases the page controller when onboarding is no longer visible.
     _pageController.dispose();
     super.dispose();
   }
@@ -53,6 +56,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
             PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
+                // Keeps the pagination indicator and button label in sync with the swipe position.
                 setState(() {
                   _currentPage = index;
                 });
@@ -153,6 +157,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
+                            // Advances through the walkthrough, then routes new users to sign-in.
                             if (_currentPage < _onboardingData.length - 1) {
                               _pageController.nextPage(
                                 duration: const Duration(milliseconds: 300),
@@ -186,7 +191,7 @@ class _UserOnboardingScreenState extends State<UserOnboardingScreen> {
                         ),
                       ),
                       
-                      //
+                      // Shows a back control after the user has moved beyond the first page.
                       if (_currentPage > 0) ...[
                         const SizedBox(width: 16),
                         GestureDetector(

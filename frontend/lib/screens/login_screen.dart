@@ -5,6 +5,7 @@ import '../widgets/custom_text_field.dart';
 import '../screens/signup_screen.dart';
 import '../screens/home_screen.dart'; 
 
+/// Sign-in screen shared by customer and designer account flows.
 class LoginScreen extends StatefulWidget {
   final bool isDesigner;
   const LoginScreen({super.key, this.isDesigner = false});
@@ -14,10 +15,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Controls whether the password text is masked in the form field.
   bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
+    // Tailors labels and the next route to the selected account role.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(

@@ -2,8 +2,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
+import '../widgets/glass_card.dart'; // Reusable glass-effect container for grouped content.
 import 'track_order_screen.dart';
 
+/// Shows the full summary and available actions for a selected order.
 class OrderDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> order;
 
@@ -11,6 +13,7 @@ class OrderDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Receives the selected order record from the list instead of fetching it again.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -37,6 +40,7 @@ class OrderDetailsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
+                  // Displays the order's primary reference image.
                   ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: SizedBox(
@@ -51,95 +55,67 @@ class OrderDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: const Color.fromRGBO(
-                          0,
-                          0,
-                          0,
-                          1,
-                        ).withOpacity(0.1),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 15,
-                          spreadRadius: 0,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    order['id'],
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textDark,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: (order['statusColor'] as Color)
-                                          .withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Text(
-                                      order['status'],
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: order['statusColor'],
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                  // Groups the order metadata in a reusable glass-effect card.
+                  GlassCard(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              order['id'],
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textDark,
                               ),
-                              const SizedBox(height: 20),
-                              _buildInfoRow('الخدمة', order['service']),
-                              const Divider(height: 24, color: Colors.black12),
-                              _buildInfoRow('المصمم', order['designer']),
-                              const Divider(height: 24, color: Colors.black12),
-                              _buildInfoRow('التاريخ', order['date']),
-                              const Divider(height: 24, color: Colors.black12),
-                              _buildInfoRow('السعر', order['price']),
-                            ],
-                          ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (order['statusColor'] as Color)
+                                    .withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                order['status'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: order['statusColor'],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 20),
+                        _buildInfoRow('الخدمة', order['service']),
+                        const Divider(height: 24, color: Colors.black12),
+                        _buildInfoRow('المصمم', order['designer']),
+                        const Divider(height: 24, color: Colors.black12),
+                        _buildInfoRow('التاريخ', order['date']),
+                        const Divider(height: 24, color: Colors.black12),
+                        _buildInfoRow('السعر', order['price']),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 32),
 
+                  // Primary actions for tracking the order or contacting the designer.
                   Row(
                     children: [
+                      // Opens the order progress timeline.
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(
-                                  0xFF261732,
-                                ).withOpacity(0.25),
+                                color: AppColors.textDark.withOpacity(0.25),
                                 blurRadius: 15,
                                 offset: const Offset(0, 8),
                               ),
@@ -147,6 +123,7 @@ class OrderDetailsScreen extends StatelessWidget {
                           ),
                           child: ElevatedButton(
                             onPressed: () {
+                              // Preserves the order record while opening its progress tracker.
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -156,14 +133,12 @@ class OrderDetailsScreen extends StatelessWidget {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.textDark.withOpacity(
-                                0.8,
-                              ),
+                              backgroundColor: AppColors.textDark.withOpacity(0.80),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(50),
                               ),
-                              elevation: 0, 
+                              elevation: 0,
                             ),
                             child: const Text(
                               'تتبع الطلب',
@@ -177,59 +152,34 @@ class OrderDetailsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 16),
+
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(50),
-                            border: Border.all(
-                              color: const Color.fromRGBO(0, 0, 0, 1).withOpacity(0.1),
+                        child: GlassCard(
+                          borderRadius: 50,
+                          padding: EdgeInsets.zero,
+                          child: ElevatedButton.icon(
+                            onPressed: () {},
+                            icon: const Icon(
+                              Icons.chat_bubble_outline,
+                              color: AppColors.textDark,
+                              size: 20,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 15,
-                                offset: const Offset(0, 8),
+                            label: const Text(
+                              'تواصل',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textDark,
                               ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(50),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(
-                                sigmaX: 10.0,
-                                sigmaY: 10.0,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50),
                               ),
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  // مؤجلة للمستقبل
-                                },
-                                icon: const Icon(
-                                  Icons.chat_bubble_outline,
-                                  color: AppColors.textDark,
-                                  size: 20,
-                                ),
-                                label: const Text(
-                                  'تواصل',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textDark,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors
-                                      .transparent, 
-                                  shadowColor: Colors.transparent,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  elevation: 0,
-                                ),
-                              ),
+                              elevation: 0,
                             ),
                           ),
                         ),
@@ -246,6 +196,7 @@ class OrderDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildInfoRow(String title, String value) {
+    // Standardizes metadata rows for service, designer, date, and price.
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

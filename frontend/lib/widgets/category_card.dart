@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
+/// Displays a tappable-looking image and label for a design category.
 class CategoryCard extends StatelessWidget {
   final String title;
   final String image;

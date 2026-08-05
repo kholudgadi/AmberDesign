@@ -8,6 +8,9 @@ import '../widgets/designer_card.dart';
 import '../widgets/mini_designer_card.dart';
 import '../screens/request_design_view.dart';
 import '../screens/my_orders_view.dart';
+import '../screens/profile_view.dart';
+
+/// Main signed-in experience that hosts home content and user navigation tabs.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -16,7 +19,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Determines which content area is rendered by the bottom navigation bar.
   int _currentIndex = 0;
+  // Owns the query so the search field and result view stay synchronized.
   final TextEditingController _searchController = TextEditingController();
 
   // mock data for categories and designers
@@ -90,12 +95,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    // Releases the controller when this screen is removed from the widget tree.
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Switches the main body based on the active navigation tab.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -120,6 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? const RequestDesignView()
                         : _currentIndex == 3
                         ? const MyOrdersView()
+                        : _currentIndex == 4
+                        ? const ProfileView()
                         : _currentIndex == 0
                         ? _buildHomeTab()
                         : Center(
@@ -143,6 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
         bottomNavigationBar: UserBottomNavBar(
           currentIndex: _currentIndex,
           onTap: (index) {
+            // Changes tabs without adding a new route to the navigation stack.
             setState(() {
               _currentIndex = index;
             });
@@ -153,6 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeTab() {
+    // Combines the fashion and interior-design discovery sections.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchTab() {
+    // Shows either search guidance or live results based on the current query.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -208,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAppBar() {
+    // Sub-pages use a back action that returns the user to the home tab.
     bool isSubPage = _currentIndex != 0;
 
     String pageTitle = 'Amber design'; 
@@ -338,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoriesList() {
+    // Horizontal scrolling keeps the category strip compact on narrow screens.
     return SizedBox(
       height: 120,
       child: ListView.builder(
@@ -356,6 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDesignersList(List<Map<String, String>> designers) {
+    // Disables nested scrolling because the parent page already scrolls.
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -374,6 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchResultsView() {
+    // Reads the latest query once so every result label uses the same value.
     String query = _searchController.text;
 
     return Column(

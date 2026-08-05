@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
+/// Standard form field with consistent styling and optional password visibility control.
 class CustomTextField extends StatelessWidget {
   final String label;
   final String hint;
@@ -26,6 +27,7 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The password suffix is rendered only for fields that support obscuring text.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 
 /// A screen that displays the initial splash UI.
 /// Features a lightened background image, the company logo, and a navigation button.
+/// Initial entry screen that introduces the app and directs users to role selection.
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // The primary action begins the account-role selection flow.
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,

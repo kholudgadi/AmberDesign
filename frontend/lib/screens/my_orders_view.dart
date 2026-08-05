@@ -2,7 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import 'order_details_screen.dart';
-
+import '../widgets/glass_card.dart';
+/// Displays the user's current and completed orders from the temporary local data set.
 class MyOrdersView extends StatelessWidget {
   const MyOrdersView({super.key});
 
@@ -51,6 +52,7 @@ class MyOrdersView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The parent screen owns scrolling, so this list expands only to its content height.
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -66,121 +68,87 @@ class MyOrdersView extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OrderDetailsScreen(order: order),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        height: 140,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color.fromRGBO(0, 0, 0, 1).withOpacity(0.1),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08), 
-              blurRadius: 15,
-              spreadRadius: 0,
-              offset: const Offset(0, 8), 
+/// Builds one interactive order summary and opens its details when tapped.
+Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GestureDetector(
+        onTap: () {
+          // Passes the entire order record so the details screen renders the selected item.
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderDetailsScreen(order: order),
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              order['service'],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: (order['statusColor'] as Color)
-                                    .withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                order['status'],
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: order['statusColor'],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          order['designer'],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textMuted,
+          );
+        },
+        // Reusable card that keeps every order item visually consistent.
+        child: GlassCard(
+          height: 140,
+          borderRadius: 20,
+          padding: EdgeInsets.zero, // Allows the image to reach the card edge.
+          child: Row(
+            children: [
+              // Order text and metadata appear on the leading side in RTL layouts.
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            order['service'],
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
                           ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              order['date'],
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textMuted.withOpacity(0.8),
-                              ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (order['statusColor'] as Color).withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            Text(
-                              order['price'],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
-                              ),
+                            child: Text(
+                              order['status'],
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: order['statusColor']),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        order['designer'],
+                        style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            order['date'],
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted.withOpacity(0.8)),
+                          ),
+                          Text(
+                            order['price'],
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(
-                  width: 100,
-                  height: double.infinity,
-                  child: Image.asset(
-                    order['image'],
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                  ),
+              ),
+              // Order image appears on the trailing side in RTL layouts.
+              SizedBox(
+                width: 100,
+                height: double.infinity,
+                child: Image.asset(
+                  order['image'],
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
