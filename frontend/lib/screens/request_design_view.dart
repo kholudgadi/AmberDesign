@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
+import 'order_review_screen.dart';
 
 /// Adaptive request form for fashion and interior-design services.
 class RequestDesignView extends StatefulWidget {
@@ -14,12 +15,14 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   // `null` means no category is selected; `true` selects fashion and `false` selects interior design.
   bool? isFashion;
 
+  // Stores the options selected for a fashion design request.
   String? selectedDressType;
   String? selectedSize;
   String? selectedColor;
   String? selectedFabric;
   String? selectedLength;
 
+  // Stores the options selected for an interior design request.
   String? selectedProjectType;
   String? selectedStyle;
   String? selectedBudget;
@@ -92,6 +95,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
       children: [
         Expanded(
           child: GestureDetector(
+            // Selects the interior-design form and rebuilds the visible fields.
             onTap: () => setState(() => isFashion = false),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200), 
@@ -126,6 +130,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
         
         Expanded(
           child: GestureDetector(
+            // Selects the fashion-design form and rebuilds the visible fields.
             onTap: () => setState(() => isFashion = true),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200), 
@@ -410,6 +415,42 @@ class _RequestDesignViewState extends State<RequestDesignView> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
+          // Creates the list of details that will be shown on the review screen.
+          List<Map<String, String>> collectedDetails = [];
+
+          // Adds only the fashion fields that the user selected.
+          if (isFashion == true) {
+            collectedDetails.add({'title': 'نوع التصميم', 'value': 'تصميم أزياء'});
+            if (selectedDressType != null) collectedDetails.add({'title': 'نوع الطلب', 'value': selectedDressType!});
+            if (selectedSize != null) collectedDetails.add({'title': 'المقاس', 'value': selectedSize!});
+            if (selectedColor != null) collectedDetails.add({'title': 'اللون', 'value': selectedColor!});
+            if (selectedFabric != null) collectedDetails.add({'title': 'القماش', 'value': selectedFabric!});
+            if (selectedLength != null) collectedDetails.add({'title': 'الطول', 'value': selectedLength!});
+          }
+          // Adds only the interior-design fields that the user selected.
+          else if (isFashion == false) {
+            collectedDetails.add({'title': 'نوع التصميم', 'value': 'تصميم داخلي (ديكور)'});
+            if (selectedProjectType != null) collectedDetails.add({'title': 'نوع المشروع', 'value': selectedProjectType!});
+            if (selectedStyle != null) collectedDetails.add({'title': 'الأسلوب', 'value': selectedStyle!});
+            if (selectedArea != null) collectedDetails.add({'title': 'المساحة', 'value': selectedArea!});
+            if (selectedBudget != null) collectedDetails.add({'title': 'الميزانية', 'value': selectedBudget!});
+          }
+
+          // Adds the service terms currently displayed as fixed example values.
+          collectedDetails.add({'title': 'مدة التسليم', 'value': '٣-٥ أيام عمل'});
+          collectedDetails.add({'title': 'المراجعات', 'value': '٣ جولات'});
+
+          // Opens the review screen and passes the collected request details.
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderReviewScreen(
+                orderDetails: collectedDetails,
+                serviceFee: 450.0, // This can later be calculated from the selected service.
+                platformFee: 30.0,
+              ),
+            ),
+          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.textDark,
