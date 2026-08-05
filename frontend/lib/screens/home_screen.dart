@@ -9,6 +9,8 @@ import '../widgets/mini_designer_card.dart';
 import '../screens/request_design_view.dart';
 import '../screens/my_orders_view.dart';
 import '../screens/profile_view.dart';
+import '../widgets/app_drawer.dart';
+import 'notifications_dialog.dart';
 
 /// Main signed-in experience that hosts home content and user navigation tabs.
 class HomeScreen extends StatefulWidget {
@@ -107,6 +109,12 @@ class _HomeScreenState extends State<HomeScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         extendBody: true,
+        drawer: AppDrawer(
+          onTabSelected: (index) {
+            // Drawer selections reuse the existing tab layout, including the bottom navigation.
+            setState(() => _currentIndex = index);
+          },
+        ),
         body: AppBackground(
           child: SafeArea(
             bottom: false,
@@ -242,18 +250,24 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: Icon(
-              isSubPage ? Icons.arrow_back : Icons.menu, 
-              color: AppColors.textDark, 
-              size: 28
-            ),
-            onPressed: () {
-              if (isSubPage) {
-                setState(() => _currentIndex = 0);
-              } else {
-              }
-            },
+          Builder(
+            builder: (context) {
+              return IconButton(
+                icon: Icon(
+                  isSubPage ? Icons.arrow_back : Icons.menu,
+                  color: AppColors.textDark,
+                  size: 28
+                ),
+                onPressed: () {
+                  if (isSubPage) {
+                    setState(() => _currentIndex = 0);
+                  } else {
+                    // 👇 3. أمر فتح القائمة الجانبية
+                    Scaffold.of(context).openDrawer();
+                  }
+                },
+              );
+            }
           ),
           
           Text(
@@ -270,7 +284,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ? const SizedBox(width: 48) 
               : IconButton(
                   icon: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 28),
-                  onPressed: () {},
+                  // Opens the same notification dialog as the drawer menu item.
+                  onPressed: () => showNotificationsDialog(context),
                 ),
         ],
       ),

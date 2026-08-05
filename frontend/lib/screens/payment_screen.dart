@@ -28,10 +28,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_forward, color: AppColors.textDark),
-            onPressed: () => Navigator.pop(context),
-          ),
+          // BackButton automatically uses the correct visual direction for RTL and LTR layouts.
+          leading: const BackButton(color: AppColors.textDark),
           title: const Text('الدفع', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold)),
           centerTitle: true,
         ),
