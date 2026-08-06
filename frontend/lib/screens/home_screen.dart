@@ -11,6 +11,7 @@ import '../screens/my_orders_view.dart';
 import '../screens/profile_view.dart';
 import '../widgets/app_drawer.dart';
 import 'notifications_dialog.dart';
+import '../screens/designer_profile_screen.dart';
 
 /// Main signed-in experience that hosts home content and user navigation tabs.
 class HomeScreen extends StatefulWidget {
@@ -375,9 +376,19 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: dressCategories.length,
         itemBuilder: (context, index) {
           final category = dressCategories[index];
-          return CategoryCard(
-            title: category['title']!,
-            image: category['image']!,
+          
+          // 👇 غلفنا الكارد بـ GestureDetector عشان يتفاعل مع الضغط
+          return GestureDetector(
+            onTap: () {
+              // نغير التاب إلى رقم 2 (وهو الخاص بصفحة طلب تصميم)
+              setState(() {
+                _currentIndex = 2;
+              });
+            },
+            child: CategoryCard(
+              title: category['title']!,
+              image: category['image']!,
+            ),
           );
         },
       ),
@@ -392,12 +403,24 @@ class _HomeScreenState extends State<HomeScreen> {
       itemCount: designers.length,
       itemBuilder: (context, index) {
         final designer = designers[index];
-        return DesignerCard(
-          name: designer['name']!,
-          rating: designer['rating']!,
-          category: designer['category']!,
-          coverImage: designer['coverImage']!,
-          avatarImage: designer['avatarImage']!,
+        
+        // 👇 Wrap the card with GestureDetector for navigation
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DesignerProfileScreen(designer: designer),
+              ),
+            );
+          },
+          child: DesignerCard(
+            name: designer['name']!,
+            rating: designer['rating']!,
+            category: designer['category']!,
+            coverImage: designer['coverImage']!,
+            avatarImage: designer['avatarImage']!,
+          ),
         );
       },
     );
