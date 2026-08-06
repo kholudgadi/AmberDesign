@@ -34,8 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  http: ^1.6.0
-  flutter_secure_storage: ^10.3.1
+  google_fonts: ^8.2.1
 
 dev_dependencies:
   flutter_test:
@@ -63,9 +62,22 @@ flutter:
   assets:
     - assets/images/Amber_Design_Logo.png
     - assets/images/splash_bg.jpg
-    - assets/images/Fashion.png
-    - assets/images/Fashion(1).png
-    - assets/images/Fashion(2).png
+    - assets/images/evening.png
+    - assets/images/wedding.png
+    - assets/images/party.png
+    - assets/images/unique.png
+    - assets/images/casual.png
+    - assets/images/bridal.png
+    - assets/images/red.png
+    - assets/images/black.png
+    - assets/images/interiorDesign.jpg
+    - assets/images/interiorDesign(1).jpg
+    - assets/images/interiorDesign(2).jpg
+    - assets/images/interiorDesign(3).jpg
+    - assets/images/interiorDesigner.png
+    - assets/images/evening dress designer.png
+    - assets/images/wedding dress designer.png
+    - assets/images/party dress designer.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

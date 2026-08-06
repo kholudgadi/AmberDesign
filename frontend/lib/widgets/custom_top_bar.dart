@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
+/// Top bar with back navigation and a local visual language selector.
 class CustomTopBar extends StatefulWidget {
   const CustomTopBar({super.key});
 
@@ -9,14 +10,16 @@ class CustomTopBar extends StatefulWidget {
 }
 
 class _CustomTopBarState extends State<CustomTopBar> {
+  // Tracks which language label is visually active; it does not localize content yet.
   bool isArabic = true;
 
   @override
   Widget build(BuildContext context) {
+    // Uses RTL layout so the navigation and language controls match the Arabic interface.
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Directionality(
-        textDirection: TextDirection.ltr,
+        textDirection: TextDirection.rtl,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

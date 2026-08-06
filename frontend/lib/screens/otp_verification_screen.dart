@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/custom_top_bar.dart';
+import 'home_screen.dart';
 
+/// Collects and validates a four-digit one-time passcode before entering the app.
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
 
@@ -21,12 +23,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final List<TextEditingController> _controllers =
       List.generate(4, (_) => TextEditingController());
   
+  // Controls automatic keyboard focus movement between the individual digit fields.
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
   bool _isOtpComplete = false;
 
   @override
   void initState() {
+    // Listens to every field so the submit button updates as soon as all digits are present.
     super.initState();
     for (var controller in _controllers) {
       controller.addListener(_checkOtpCompletion);
@@ -45,6 +49,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   void dispose() {
+    // Disposes all controllers and focus nodes to prevent resource leaks.
     for (var controller in _controllers) {
       controller.dispose();
     }
@@ -56,6 +61,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The confirmation action remains disabled until the complete OTP is entered.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -146,13 +152,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                         const SizedBox(height: 40),
 
-                        // زر التأكيد
                         ElevatedButton(
                           onPressed: _isOtpComplete
                               ? () {
                                   String otpCode = _controllers.map((c) => c.text).join();
                                   debugPrint("الرمز المدخل هو: $otpCode");
-                                  
+                                  Navigator.pushAndRemoveUntil(
+                                    // Navigates to the HomeScreen and removes all previous routes from the stack.
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const HomeScreen(),
+                                    ),
+                                    (Route<dynamic> route) => false, // delete all previous routes
+                                  );
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
@@ -191,6 +203,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   // This method builds an individual OTP input box based on the provided index
   Widget _buildOtpBox(int index) {
+    // Restricts each box to one digit and moves focus forward or backward automatically.
     return Container(
       width: 60,
       height: 65,

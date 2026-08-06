@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Applies the shared background image and a light overlay behind a page.
 class AppBackground extends StatelessWidget {
   final Widget child;
 
@@ -7,10 +8,11 @@ class AppBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Layers page content above the background so individual screens need no duplicate styling.
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. صورة الخلفية
+        // Full-screen background image shared by the application's pages.
         Image.asset(
           'assets/images/splash_bg.jpg',
           fit: BoxFit.cover,
