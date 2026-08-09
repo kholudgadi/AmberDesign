@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import 'order_review_screen.dart';
+import '../utils/global_data.dart';
+import '../screens/order_review_screen.dart';
 
 /// Adaptive request form for fashion and interior-design services.
 class RequestDesignView extends StatefulWidget {
@@ -25,8 +26,8 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   // Stores the options selected for an interior design request.
   String? selectedProjectType;
   String? selectedStyle;
-  String? selectedBudget;
   String? selectedArea;
+  // Budget input was removed based on the current requirement.
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +70,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
           _buildUploadBox(),
           const SizedBox(height: 32),
 
-          _buildNextButton(),
+          _buildNextButton(), // Renders the action button that proceeds to review.
           const SizedBox(height: 40),
         ] else ...[
           Center(
@@ -98,7 +99,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
             // Selects the interior-design form and rebuilds the visible fields.
             onTap: () => setState(() => isFashion = false),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200), 
+              duration: const Duration(milliseconds: 200),
               height: 50,
               decoration: BoxDecoration(
                 color: isFashion == false
@@ -117,23 +118,21 @@ class _RequestDesignViewState extends State<RequestDesignView> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isFashion == false
-                      ? Colors.white
-                      : AppColors.textDark,
+                  color: isFashion == false ? Colors.white : AppColors.textDark,
                 ),
               ),
             ),
           ),
         ),
-        
-        const SizedBox(width: 16), 
-        
+
+        const SizedBox(width: 16),
+
         Expanded(
           child: GestureDetector(
             // Selects the fashion-design form and rebuilds the visible fields.
             onTap: () => setState(() => isFashion = true),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200), 
+              duration: const Duration(milliseconds: 200),
               height: 50,
               decoration: BoxDecoration(
                 color: isFashion == true
@@ -152,9 +151,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isFashion == true
-                      ? Colors.white
-                      : AppColors.textDark,
+                  color: isFashion == true ? Colors.white : AppColors.textDark,
                 ),
               ),
             ),
@@ -259,17 +256,12 @@ class _RequestDesignViewState extends State<RequestDesignView> {
           (val) => setState(() => selectedStyle = val),
         ),
         _buildSelectionGroup(
-          'الميزانية',
-          ['أقل من 10000', '10000-30000', '30000-60000', 'أكثر من 60000'],
-          selectedBudget,
-          (val) => setState(() => selectedBudget = val),
-        ),
-        _buildSelectionGroup(
           'المساحة',
           ['أقل من 20 م²', '20-50 م²', '50-100 م²', 'أكثر من 100 م²'],
           selectedArea,
           (val) => setState(() => selectedArea = val),
         ),
+        // Budget input is intentionally omitted for this flow.
       ],
     );
   }
@@ -295,8 +287,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
             spacing: 8,
             runSpacing: 10,
             children: options.map((option) {
-              final isSelected =
-                  option == selectedValue; 
+              final isSelected = option == selectedValue;
               return GestureDetector(
                 onTap: () => onSelect(option),
                 child: AnimatedContainer(
@@ -410,44 +401,65 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildNextButton() {
-    // Enables progression only after a service category has been selected.
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          // Creates the list of details that will be shown on the review screen.
           List<Map<String, String>> collectedDetails = [];
 
-          // Adds only the fashion fields that the user selected.
           if (isFashion == true) {
-            collectedDetails.add({'title': 'نوع التصميم', 'value': 'تصميم أزياء'});
-            if (selectedDressType != null) collectedDetails.add({'title': 'نوع الطلب', 'value': selectedDressType!});
-            if (selectedSize != null) collectedDetails.add({'title': 'المقاس', 'value': selectedSize!});
-            if (selectedColor != null) collectedDetails.add({'title': 'اللون', 'value': selectedColor!});
-            if (selectedFabric != null) collectedDetails.add({'title': 'القماش', 'value': selectedFabric!});
-            if (selectedLength != null) collectedDetails.add({'title': 'الطول', 'value': selectedLength!});
-          }
-          // Adds only the interior-design fields that the user selected.
-          else if (isFashion == false) {
-            collectedDetails.add({'title': 'نوع التصميم', 'value': 'تصميم داخلي (ديكور)'});
-            if (selectedProjectType != null) collectedDetails.add({'title': 'نوع المشروع', 'value': selectedProjectType!});
-            if (selectedStyle != null) collectedDetails.add({'title': 'الأسلوب', 'value': selectedStyle!});
-            if (selectedArea != null) collectedDetails.add({'title': 'المساحة', 'value': selectedArea!});
-            if (selectedBudget != null) collectedDetails.add({'title': 'الميزانية', 'value': selectedBudget!});
+            collectedDetails.add({
+              'title': 'نوع التصميم',
+              'value': 'تصميم أزياء',
+            });
+            if (selectedDressType != null)
+              collectedDetails.add({
+                'title': 'نوع الطلب',
+                'value': selectedDressType!,
+              });
+            if (selectedSize != null)
+              collectedDetails.add({'title': 'المقاس', 'value': selectedSize!});
+            if (selectedColor != null)
+              collectedDetails.add({'title': 'اللون', 'value': selectedColor!});
+            if (selectedFabric != null)
+              collectedDetails.add({
+                'title': 'القماش',
+                'value': selectedFabric!,
+              });
+            if (selectedLength != null)
+              collectedDetails.add({
+                'title': 'الطول',
+                'value': selectedLength!,
+              });
+          } else if (isFashion == false) {
+            collectedDetails.add({
+              'title': 'نوع التصميم',
+              'value': 'تصميم داخلي (ديكور)',
+            });
+            if (selectedProjectType != null)
+              collectedDetails.add({
+                'title': 'نوع المشروع',
+                'value': selectedProjectType!,
+              });
+            if (selectedStyle != null)
+              collectedDetails.add({
+                'title': 'الأسلوب',
+                'value': selectedStyle!,
+              });
+            if (selectedArea != null)
+              collectedDetails.add({
+                'title': 'المساحة',
+                'value': selectedArea!,
+              });
           }
 
-          // Adds the service terms currently displayed as fixed example values.
-          collectedDetails.add({'title': 'مدة التسليم', 'value': '٣-٥ أيام عمل'});
-          collectedDetails.add({'title': 'المراجعات', 'value': '٣ جولات'});
-
-          // Opens the review screen and passes the collected request details.
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => OrderReviewScreen(
                 orderDetails: collectedDetails,
-                serviceFee: 450.0, // This can later be calculated from the selected service.
-                platformFee: 30.0,
+                serviceFee: 0.0, // الرسوم صفر بانتظار تسعير المصممة
+                platformFee: 0.0,
               ),
             ),
           );

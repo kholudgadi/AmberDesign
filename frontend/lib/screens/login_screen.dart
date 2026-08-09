@@ -3,7 +3,7 @@ import '../utils/app_colors.dart';
 import '../widgets/custom_top_bar.dart';
 import '../widgets/custom_text_field.dart';
 import '../screens/signup_screen.dart';
-import '../screens/home_screen.dart'; 
+import '../screens/home_screen.dart';
 
 /// Sign-in screen shared by customer and designer account flows.
 class LoginScreen extends StatefulWidget {
@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 40),
 
-                          // calling the email field
+                          // Renders the email input field.
                           const CustomTextField(
                             label: 'البريد الإلكتروني',
                             hint: 'example@mail.com',
@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // calling the password field
+                          // Renders the password input field with toggle support.
                           CustomTextField(
                             label: 'كلمة المرور',
                             hint: '••••••••',
@@ -113,13 +113,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           ElevatedButton(
                             onPressed: () {
                               debugPrint("تسجيل الدخول...");
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const HomeScreen(), // Navigates to the HomeScreen
-                                ),
-                                (Route<dynamic> route) => false, // delete all previous routes
-                              );
+
+                              // Route the user based on whether the account is a designer or a customer.
+                              if (widget.isDesigner) {
+                                // Redirect the designer to the home screen for now.
+                                // This is a temporary route until a dedicated designer dashboard exists.
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const HomeScreen(),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              } else {
+                                // Redirect the customer to the home screen.
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const HomeScreen(),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color.fromRGBO(
@@ -179,9 +194,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => SignupScreen(isDesigner: widget.isDesigner),
+                                  builder: (context) => SignupScreen(
+                                    isDesigner: widget.isDesigner,
+                                  ),
                                 ),
-                              ); 
+                              );
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),

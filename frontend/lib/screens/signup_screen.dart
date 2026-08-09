@@ -20,8 +20,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // created TextEditingController for each input field to manage and read the text
-  // Controllers provide the latest field values for live form validation.
+  // Creates a text controller for each input field so the form can read and validate values.
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -29,7 +28,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  // This boolean will track if all fields are filled to enable the "Next" button
+  // Tracks whether the form has enough data to enable the next action.
   bool _isFormValid = false;
 
   @override
@@ -44,7 +43,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _confirmPasswordController.addListener(_checkFormValidity);
   }
 
-  // This method checks if all input fields are filled and updates the _isFormValid state accordingly
+  // Checks whether all required fields have values and updates the form state.
   void _checkFormValidity() {
     // Keeps the continue button disabled until all required values are valid.
     bool isValid =
@@ -123,7 +122,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // connecting the CustomTextField widgets with their respective controllers to manage input
+                        // Connects each custom text field to the corresponding controller for input handling.
                         CustomTextField(
                           label: 'الاسم الكامل',
                           hint: 'محمد العمري',
@@ -179,21 +178,23 @@ class _SignupScreenState extends State<SignupScreen> {
 
                         // The "Next" button is enabled only when all fields are filled
                         ElevatedButton(
-                          // The onPressed callback is set to null when the form is not valid, which disables the button. When the form is valid, it prints a debug message.
+                          // Disables the button until the form is fully filled and valid.
                           onPressed: _isFormValid
                               ? () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => OtpVerificationScreen(
-                                        email: _emailController.text, // Passing the email to the OTP verification screen
+                                        email: _emailController
+                                            .text, // Passing the email to the OTP verification screen
+                                        isDesigner: widget.isDesigner,
                                       ),
                                     ),
                                   );
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
-                            // The background color changes based on the form's validity. If the form is valid, it uses a darker color; if not, it uses a muted color with opacity.
+                            // Adjusts the button appearance based on whether the form is valid.
                             backgroundColor: _isFormValid
                                 ? const Color.fromRGBO(38, 23, 50, 0.8)
                                 : AppColors.textMuted.withOpacity(0.5),
@@ -205,7 +206,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             elevation: _isFormValid
                                 ? 8
-                                : 0, // Elevation is set to 0 when the button is disabled to give a flat appearance
+                                : 0, // Keeps the disabled button visually flat.
                           ),
                           child: const Text(
                             'التالي',

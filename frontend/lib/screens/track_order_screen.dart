@@ -1,10 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import '../widgets/app_background.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/app_background.dart';
 
-/// Visualizes a selected order's current status as a four-step timeline.
+/// Visualizes a selected order's current status as a unified 7-step timeline.
 class TrackOrderScreen extends StatelessWidget {
   final Map<String, dynamic> order;
 
@@ -12,20 +11,32 @@ class TrackOrderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Converts the stored status label into the index used by the timeline UI.
+    // Maps the order status to the corresponding index in the unified 7-step timeline.
     int currentStepIndex = 0;
     switch (order['status']) {
       case 'تم التقديم':
+      case 'تم إرسال طلبك':
         currentStepIndex = 0;
         break;
-      case 'قيد التنفيذ':
+      case 'المصممة تراجع طلبك':
         currentStepIndex = 1;
         break;
-      case 'قيد المراجعة':
+      case 'عرض السعر من المصممة':
         currentStepIndex = 2;
         break;
-      case 'مكتمل':
+      case 'موافقتك والدفع':
         currentStepIndex = 3;
+        break;
+      case 'قيد التنفيذ':
+      case 'بدء التصميم':
+        currentStepIndex = 4;
+        break;
+      case 'قيد المراجعة':
+      case 'المراجعة':
+        currentStepIndex = 5;
+        break;
+      case 'مكتمل':
+        currentStepIndex = 6;
         break;
       default:
         currentStepIndex = 0;
@@ -57,7 +68,7 @@ class TrackOrderScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
-                  // Summarizes the selected order and its current status.
+                  // Order summary section.
                   GlassCard(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -79,7 +90,7 @@ class TrackOrderScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${order['service']} • ${order['designer']}',
+                              '${order['service'] ?? order['title']} • ${order['designer']}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textMuted,
@@ -93,9 +104,10 @@ class TrackOrderScreen extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: (order['statusColor'] as Color).withOpacity(
-                              0.15,
-                            ),
+                            color:
+                                (order['statusColor'] as Color? ??
+                                        AppColors.textDark)
+                                    .withOpacity(0.15),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
@@ -103,7 +115,7 @@ class TrackOrderScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: order['statusColor'],
+                              color: order['statusColor'] ?? AppColors.textDark,
                             ),
                           ),
                         ),
@@ -112,7 +124,7 @@ class TrackOrderScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // Visual timeline of the order's progress through each stage.
+                  // Unified timeline rendered inside a glass card.
                   GlassCard(
                     padding: const EdgeInsets.all(24),
                     child: Column(
@@ -129,36 +141,60 @@ class TrackOrderScreen extends StatelessWidget {
                         const SizedBox(height: 24),
 
                         _buildTimelineStep(
-                          title: 'تم تقديم الطلب',
+                          title: 'تم إرسال طلبك',
                           subtitle: currentStepIndex == 0
-                              ? 'تم استلام طلبك وبانتظار البدء'
+                              ? 'بانتظار استلام المصممة للطلب'
                               : null,
                           isCompleted: currentStepIndex >= 0,
                           isLastCompleted: currentStepIndex == 0,
                         ),
                         _buildTimelineStep(
-                          title: 'قيد التنفيذ',
+                          title: 'المصممة تراجع طلبك',
                           subtitle: currentStepIndex == 1
-                              ? 'المصممة تعمل على تصميمك الآن'
+                              ? 'جاري دراسة المتطلبات والمواصفات'
                               : null,
                           isCompleted: currentStepIndex >= 1,
                           isLastCompleted: currentStepIndex == 1,
                         ),
                         _buildTimelineStep(
-                          title: 'المراجعة',
+                          title: 'عرض السعر من المصممة',
                           subtitle: currentStepIndex == 2
-                              ? 'التصميم المبدئي جاهز لمراجعتك'
+                              ? 'المصممة حددت السعر، بانتظار قرارك'
                               : null,
                           isCompleted: currentStepIndex >= 2,
                           isLastCompleted: currentStepIndex == 2,
                         ),
                         _buildTimelineStep(
-                          title: 'مكتمل',
+                          title: 'موافقتك والدفع',
                           subtitle: currentStepIndex == 3
-                              ? 'تم تسليم التصميم النهائي بنجاح'
+                              ? 'تم الدفع بنجاح واعتماد الطلب'
                               : null,
                           isCompleted: currentStepIndex >= 3,
                           isLastCompleted: currentStepIndex == 3,
+                        ),
+                        _buildTimelineStep(
+                          title: 'بدء التصميم',
+                          subtitle: currentStepIndex == 4
+                              ? 'المصممة تعمل على تصميمك الآن'
+                              : null,
+                          isCompleted: currentStepIndex >= 4,
+                          isLastCompleted: currentStepIndex == 4,
+                        ),
+                        _buildTimelineStep(
+                          title: 'المراجعة',
+                          subtitle: currentStepIndex == 5
+                              ? 'التصميم المبدئي جاهز لمراجعتك'
+                              : null,
+                          isCompleted: currentStepIndex >= 5,
+                          isLastCompleted: currentStepIndex == 5,
+                        ),
+                        _buildTimelineStep(
+                          title: 'مكتمل',
+                          subtitle: currentStepIndex == 6
+                              ? 'تم تسليم التصميم النهائي بنجاح'
+                              : null,
+                          isCompleted: currentStepIndex >= 6,
+                          isLastCompleted: currentStepIndex == 6,
                           isLastStep: true,
                         ),
                       ],
@@ -166,14 +202,20 @@ class TrackOrderScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // Provides the assigned designer's details and contact action.
+                  // Designer contact details.
                   GlassCard(
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
                         CircleAvatar(
                           radius: 24,
-                          backgroundImage: NetworkImage(order['image']),
+                          backgroundImage: order['image'] != null
+                              ? (order['image'].toString().startsWith('http')
+                                    ? NetworkImage(order['image'])
+                                    : AssetImage(order['image'])
+                                          as ImageProvider)
+                              : null,
+                          backgroundColor: Colors.grey.withOpacity(0.2),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -189,7 +231,7 @@ class TrackOrderScreen extends StatelessWidget {
                                 ),
                               ),
                               const Text(
-                                'مصممة أزياء • ★ 4.9',
+                                'تواصل مع المصممة لأي استفسار',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textMuted,
@@ -224,7 +266,6 @@ class TrackOrderScreen extends StatelessWidget {
     required bool isLastCompleted,
     bool isLastStep = false,
   }) {
-    // Renders the marker, connector, and optional detail for one timeline stage.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -246,14 +287,14 @@ class TrackOrderScreen extends StatelessWidget {
               child: isCompleted && !isLastCompleted
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
                   : (isLastCompleted
-                      ? Container(
-                          margin: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        )
-                      : null),
+                        ? Container(
+                            margin: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                          )
+                        : null),
             ),
             if (!isLastStep)
               Container(
