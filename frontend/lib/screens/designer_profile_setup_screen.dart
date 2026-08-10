@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/glass_card.dart';
-import 'home_screen.dart'; // Routes the designer to the home screen after completion.
+import '../screens/designer_home_screen.dart';
+import '../utils/global_data.dart'; 
 
 class DesignerProfileSetupScreen extends StatefulWidget {
   final String
@@ -183,7 +184,7 @@ class _DesignerProfileSetupScreenState
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     borderRadius: 20,
                     child: TextField(
-                      controller: _cityController, // 💡 ربط المتحكم
+                      controller: _cityController, 
                       style: const TextStyle(color: AppColors.textDark),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -211,7 +212,7 @@ class _DesignerProfileSetupScreenState
                     ),
                     borderRadius: 20,
                     child: TextField(
-                      controller: _bioController, // 💡 ربط المتحكم
+                      controller: _bioController, 
                       maxLines: 4,
                       style: const TextStyle(color: AppColors.textDark),
                       decoration: const InputDecoration(
@@ -243,7 +244,7 @@ class _DesignerProfileSetupScreenState
                         onTap: () {
                           setState(() {
                             _selectedExperience = option;
-                            _checkFormValidity(); // 💡 فحص الاكتمال عند اختيار الخبرة
+                            _checkFormValidity();
                           });
                         },
                         child: GlassCard(
@@ -279,15 +280,19 @@ class _DesignerProfileSetupScreenState
                     child: ElevatedButton(
                       onPressed: _isFormValid
                           ? () {
+                              GlobalData.designerProfile['city'] = _cityController.text.trim();
+                              GlobalData.designerProfile['bio'] = _bioController.text.trim();
+                              GlobalData.designerProfile['role'] = _getJobTitle();
+
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const HomeScreen(),
+                                  builder: (_) => const DesignerHomeScreen(),
                                 ),
                                 (route) => false,
                               );
                             }
-                          : null, // نعطله إذا البيانات ناقصة
+                          : null,
                       style: ElevatedButton.styleFrom(
                         // Adjusts the button color based on the form completeness.
                         backgroundColor: _isFormValid
@@ -308,7 +313,7 @@ class _DesignerProfileSetupScreenState
                           fontWeight: FontWeight.bold,
                           color: _isFormValid
                               ? Colors.white
-                              : Colors.white70, // بهتان النص إذا غير مكتمل
+                              : Colors.white70, 
                         ),
                       ),
                     ),

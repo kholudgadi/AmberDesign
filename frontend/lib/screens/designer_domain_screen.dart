@@ -159,7 +159,7 @@ class _DesignerDomainScreenState extends State<DesignerDomainScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08), // الظل
+            color: Colors.black.withOpacity(0.08), 
             blurRadius: 15,
             spreadRadius: 2,
             offset: const Offset(0, 5),

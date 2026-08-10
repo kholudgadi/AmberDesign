@@ -263,7 +263,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (isSubPage) {
                     setState(() => _currentIndex = 0);
                   } else {
-                    // 👇 3. أمر فتح القائمة الجانبية
                     Scaffold.of(context).openDrawer();
                   }
                 },
@@ -377,10 +376,8 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (context, index) {
           final category = dressCategories[index];
           
-          // 👇 غلفنا الكارد بـ GestureDetector عشان يتفاعل مع الضغط
           return GestureDetector(
             onTap: () {
-              // نغير التاب إلى رقم 2 (وهو الخاص بصفحة طلب تصميم)
               setState(() {
                 _currentIndex = 2;
               });

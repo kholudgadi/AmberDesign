@@ -4,6 +4,7 @@ import '../widgets/custom_top_bar.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/app_background.dart';
 import 'otp_verification_screen.dart';
+import '../utils/global_data.dart'; 
 
 /// Registration form that creates either a customer or designer account.
 class SignupScreen extends StatefulWidget {
@@ -181,6 +182,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Disables the button until the form is fully filled and valid.
                           onPressed: _isFormValid
                               ? () {
+                                if (widget.isDesigner) {
+                                    GlobalData.designerProfile['name'] = _nameController.text.trim();
+                                  }
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
