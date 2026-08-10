@@ -26,6 +26,15 @@ class _HomeScreenState extends State<HomeScreen> {
   // Owns the query so the search field and result view stay synchronized.
   final TextEditingController _searchController = TextEditingController();
 
+  void _openSearch([String query = '']) {
+    setState(() {
+      _searchController.text = query;
+      _currentIndex = 1;
+    });
+  }
+
+  void _openRequest() => setState(() => _currentIndex = 2);
+
   // mock data for categories and designers
   final List<Map<String, String>> dressCategories = [
     {'title': 'سهرة', 'image': 'assets/images/evening.png'},
@@ -177,17 +186,17 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _buildSectionDivider('تصميم أزياء'),
         const SizedBox(height: 16),
-        _buildSectionHeader('أنواع الفساتين', 'عرض الكل'),
+        _buildSectionHeader('أنواع الفساتين', 'عرض الكل', () => _openSearch()),
         const SizedBox(height: 12),
         _buildCategoriesList(),
         const SizedBox(height: 24),
-        _buildSectionHeader('أبرز المصممين', 'عرض الكل'),
+        _buildSectionHeader('أبرز المصممين', 'عرض الكل', () => _openSearch()),
         const SizedBox(height: 12),
         _buildDesignersList(fashionDesigners),
         const SizedBox(height: 32),
         _buildSectionDivider('تصميم ديكور'),
         const SizedBox(height: 16),
-        _buildSectionHeader('أبرز مصممي الديكور', 'عرض الكل'),
+        _buildSectionHeader('أبرز مصممي الديكور', 'عرض الكل', () => _openSearch()),
         const SizedBox(height: 12),
         _buildDesignersList(interiorDesigners),
         const SizedBox(height: 80),
@@ -341,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, String actionText) {
+  Widget _buildSectionHeader(String title, String actionText, VoidCallback onAction) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -353,31 +362,36 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.textDark,
           ),
         ),
-        Text(
-          actionText,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textMuted,
+        TextButton(
+          onPressed: onAction,
+          child: Text(
+            actionText,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCategoriesList() {
+  Widget _buildCategoriesList([List<Map<String, String>>? categories]) {
+    final displayedCategories = categories ?? dressCategories;
     // Horizontal scrolling keeps the category strip compact on narrow screens.
     return SizedBox(
       height: 120,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: dressCategories.length,
+        itemCount: displayedCategories.length,
         itemBuilder: (context, index) {
-          final category = dressCategories[index];
+          final category = displayedCategories[index];
           return CategoryCard(
             title: category['title']!,
             image: category['image']!,
+            onTap: () => _openSearch(category['title']!),
           );
         },
       ),
@@ -398,6 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
           category: designer['category']!,
           coverImage: designer['coverImage']!,
           avatarImage: designer['avatarImage']!,
+          onTap: _openRequest,
         );
       },
     );
@@ -405,7 +420,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSearchResultsView() {
     // Reads the latest query once so every result label uses the same value.
-    String query = _searchController.text;
+    final query = _searchController.text.trim().toLowerCase();
+    final matchingCategories = dressCategories.where((category) {
+      return category['title']!.toLowerCase().contains(query);
+    }).toList();
+    final matchingDesigners = [...fashionDesigners, ...interiorDesigners]
+        .where((designer) =>
+            designer['name']!.toLowerCase().contains(query) ||
+            designer['category']!.toLowerCase().contains(query))
+        .toList();
+
+    if (matchingCategories.isEmpty && matchingDesigners.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 60),
+          child: Text(
+            'لا توجد نتائج مطابقة لـ "$query"',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 16),
+          ),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +461,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 20,
                 ),
                 title: Text(
-                  'فستان $query',
+                  matchingCategories.isNotEmpty
+                      ? matchingCategories.first['title']!
+                      : matchingDesigners.first['name']!,
                   style: const TextStyle(color: AppColors.textDark),
                 ),
                 visualDensity: VisualDensity.compact,
@@ -439,7 +476,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 20,
                 ),
                 title: Text(
-                  'فساتين $query',
+                  matchingDesigners.isNotEmpty
+                      ? matchingDesigners.first['name']!
+                      : matchingCategories.first['title']!,
                   style: const TextStyle(color: AppColors.textDark),
                 ),
                 visualDensity: VisualDensity.compact,
@@ -454,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 24),
 
-        const Text(
+        if (matchingCategories.isNotEmpty) const Text(
           'الفساتين',
           style: TextStyle(
             fontSize: 18,
@@ -462,12 +501,12 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.textDark,
           ),
         ),
-        const SizedBox(height: 12),
-        _buildCategoriesList(),
+        if (matchingCategories.isNotEmpty) const SizedBox(height: 12),
+        if (matchingCategories.isNotEmpty) _buildCategoriesList(matchingCategories),
 
         const SizedBox(height: 24),
 
-        const Text(
+        if (matchingDesigners.isNotEmpty) const Text(
           'المصممون',
           style: TextStyle(
             fontSize: 18,
@@ -475,14 +514,17 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.textDark,
           ),
         ),
-        const SizedBox(height: 12),
-
-        const MiniDesignerCard(
-          name: 'نوف ديزاين',
-          rating: '4.8',
-          category: 'فساتين زواج',
-          avatarImage: 'assets/images/wedding dress designer.png',
-        ),
+        if (matchingDesigners.isNotEmpty) const SizedBox(height: 12),
+        ...matchingDesigners.map((designer) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: MiniDesignerCard(
+            name: designer['name']!,
+            rating: designer['rating']!,
+            category: designer['category']!,
+            avatarImage: designer['avatarImage']!,
+            onRequest: _openRequest,
+          ),
+        )),
       ],
     );
   }

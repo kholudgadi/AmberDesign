@@ -8,6 +8,7 @@ class MiniDesignerCard extends StatelessWidget {
   final String rating;
   final String category;
   final String avatarImage;
+  final VoidCallback? onRequest;
 
   const MiniDesignerCard({
     super.key,
@@ -15,6 +16,7 @@ class MiniDesignerCard extends StatelessWidget {
     required this.rating,
     required this.category,
     required this.avatarImage,
+    this.onRequest,
   });
 
   @override
@@ -86,7 +88,7 @@ class MiniDesignerCard extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: onRequest,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromRGBO(38, 23, 50, 1),
                     shape: RoundedRectangleBorder(
