@@ -3,7 +3,7 @@ import '../utils/app_colors.dart';
 import '../screens/chats_list_screen.dart';
 import '../screens/notifications_dialog.dart';
 import '../screens/settings_screen.dart';
-import '../screens/login_screen.dart';
+import '../screens/splash_screen.dart';
 
 /// Side navigation that delegates main tabs to the parent HomeScreen.
 class AppDrawer extends StatelessWidget {
@@ -89,7 +89,7 @@ class AppDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const SplashScreen()),
                   (route) => false,
                 );
               },

@@ -6,6 +6,7 @@ import '../widgets/app_background.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import 'designer_domain_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   final bool isDesigner;
@@ -77,10 +78,16 @@ class _SignupScreenState extends State<SignupScreen> {
         isDesigner: widget.isDesigner,
       );
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (_) => false,
-      );
+      if (widget.isDesigner) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DesignerDomainScreen()),
+        );
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (_) => false,
+        );
+      }
     } on ApiException catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {

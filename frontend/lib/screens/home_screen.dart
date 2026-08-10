@@ -11,6 +11,7 @@ import '../screens/my_orders_view.dart';
 import '../screens/profile_view.dart';
 import '../widgets/app_drawer.dart';
 import 'notifications_dialog.dart';
+import 'designer_profile_screen.dart';
 
 /// Main signed-in experience that hosts home content and user navigation tabs.
 class HomeScreen extends StatefulWidget {
@@ -412,7 +413,12 @@ class _HomeScreenState extends State<HomeScreen> {
           category: designer['category']!,
           coverImage: designer['coverImage']!,
           avatarImage: designer['avatarImage']!,
-          onTap: _openRequest,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DesignerProfileScreen(designer: designer),
+            ),
+          ),
         );
       },
     );

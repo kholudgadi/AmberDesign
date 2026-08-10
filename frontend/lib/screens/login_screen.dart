@@ -6,6 +6,7 @@ import '../screens/signup_screen.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import 'designer_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool isDesigner;
@@ -43,7 +44,11 @@ class _LoginScreenState extends State<LoginScreen> {
         throw ApiException(widget.isDesigner ? 'هذا الحساب ليس حساب مصمم' : 'استخدم بوابة دخول المصممين لهذا الحساب', 403);
       }
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(
+          builder: (_) => widget.isDesigner
+              ? const DesignerHomeScreen()
+              : const HomeScreen(),
+        ),
         (_) => false,
       );
     } on ApiException catch (error) {

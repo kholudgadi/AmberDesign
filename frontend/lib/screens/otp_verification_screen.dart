@@ -4,14 +4,18 @@ import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/custom_top_bar.dart';
 import 'home_screen.dart';
+import 'designer_domain_screen.dart'; // Imports the designer domain selection screen.
 
 /// Collects and validates a four-digit one-time passcode before entering the app.
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
+  final bool
+  isDesigner; // Determines whether the user follows the designer or customer path.
 
   const OtpVerificationScreen({
     super.key,
-    this.email = 'example@mail.com', // Default email if not provided
+    this.email = 'example@mail.com', // Default email if not provided.
+    this.isDesigner = false, // Default path is the customer flow.
   });
 
   @override
@@ -20,9 +24,11 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   // List of TextEditingControllers for the 4 OTP input fields
-  final List<TextEditingController> _controllers =
-      List.generate(4, (_) => TextEditingController());
-  
+  final List<TextEditingController> _controllers = List.generate(
+    4,
+    (_) => TextEditingController(),
+  );
+
   // Controls automatic keyboard focus movement between the individual digit fields.
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
@@ -37,7 +43,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  // This method checks if all OTP input fields are filled and updates the _isOtpComplete state accordingly
+  // Updates the form state when all OTP digits have been entered.
   void _checkOtpCompletion() {
     bool isComplete = _controllers.every((c) => c.text.isNotEmpty);
     if (_isOtpComplete != isComplete) {
@@ -59,6 +65,27 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     super.dispose();
   }
 
+  // Routes the user to the next screen after the OTP is verified.
+  void _verifyOtpAndProceed() {
+    String otpCode = _controllers.map((c) => c.text).join();
+    debugPrint("الرمز المدخل هو: $otpCode");
+
+    if (widget.isDesigner) {
+      // Send designers to the domain-selection step.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DesignerDomainScreen()),
+      );
+    } else {
+      // Send customers directly to the home screen.
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // The confirmation action remains disabled until the complete OTP is entered.
@@ -78,7 +105,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 30),
-                        
+
                         Center(
                           child: Image.asset(
                             'assets/images/Amber_Design_Logo.png',
@@ -111,7 +138,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                         // Row of OTP input boxes
                         Directionality(
-                          textDirection: TextDirection.ltr, 
+                          textDirection: TextDirection.ltr,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: List.generate(
@@ -154,25 +181,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                         ElevatedButton(
                           onPressed: _isOtpComplete
-                              ? () {
-                                  String otpCode = _controllers.map((c) => c.text).join();
-                                  debugPrint("الرمز المدخل هو: $otpCode");
-                                  Navigator.pushAndRemoveUntil(
-                                    // Navigates to the HomeScreen and removes all previous routes from the stack.
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const HomeScreen(),
-                                    ),
-                                    (Route<dynamic> route) => false, // delete all previous routes
-                                  );
-                                }
+                              ? _verifyOtpAndProceed // Calls the OTP verification and navigation handler.
                               : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _isOtpComplete
                                 ? const Color.fromRGBO(38, 23, 50, 0.8)
                                 : AppColors.textMuted.withOpacity(0.5),
-                            disabledBackgroundColor:
-                                AppColors.textMuted.withOpacity(0.5),
+                            disabledBackgroundColor: AppColors.textMuted
+                                .withOpacity(0.5),
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(50),
@@ -235,7 +251,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           color: AppColors.textDark,
         ),
         inputFormatters: [
-          LengthLimitingTextInputFormatter(1), 
+          LengthLimitingTextInputFormatter(1),
           FilteringTextInputFormatter.digitsOnly,
         ],
         onChanged: (value) {
@@ -243,7 +259,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             if (index < 3) {
               _focusNodes[index + 1].requestFocus();
             } else {
-              _focusNodes[index].unfocus(); 
+              _focusNodes[index].unfocus();
             }
           } else {
             if (index > 0) {
