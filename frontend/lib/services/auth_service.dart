@@ -9,6 +9,8 @@ class AuthService {
   static const _accessKey = 'amber_access_token';
   static const _refreshKey = 'amber_refresh_token';
 
+  Future<String?> accessToken() => _storage.read(key: _accessKey);
+
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,

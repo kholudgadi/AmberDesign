@@ -126,8 +126,9 @@ class OrderDetailsScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      TrackOrderScreen(order: order),
+                                  builder: (context) => TrackOrderScreen(
+                                    orderId: order['id'].toString(),
+                                  ),
                                 ),
                               );
                             },
