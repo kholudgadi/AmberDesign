@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'designer_dashboard_view.dart';
 import '../widgets/designer_bottom_nav_bar.dart'; 
+import 'designer_management_view.dart';
 
 class DesignerHomeScreen extends StatefulWidget {
   const DesignerHomeScreen({super.key});
@@ -24,7 +25,9 @@ class _DesignerHomeScreenState extends State<DesignerHomeScreen> {
       DesignerDashboardView(onTabChange: _changeTab), 
       const Center(child: Text('منتجاتي')), 
       const Center(child: Text('إدارة الطلبات الجديدة')), 
-      const Center(child: Text('إدارة المتجر والمبيعات')), 
+      DesignerManagementView(
+        onBack: () => _changeTab(0),
+        ), 
       const Center(child: Text('الملف الشخصي')), 
     ];
 
