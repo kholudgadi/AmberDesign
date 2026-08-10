@@ -16,6 +16,7 @@ import { ordersRouter } from "./routes/orders.js";
 import { platformRouter } from "./routes/platform.js";
 import { supportRouter } from "./routes/support.js";
 import { usersRouter } from "./routes/users.js";
+import { socialRouter } from "./routes/social.js";
 
 export const app = express();
 app.set("trust proxy", 1);
@@ -40,6 +41,7 @@ app.get("/health", asyncHandler(async (_req, res) => {
 }));
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", usersRouter);
+app.use("/api/v1/social", socialRouter);
 app.use("/api/v1/catalog", catalogRouter);
 app.use("/api/v1/orders", ordersRouter);
 app.use("/api/v1/community", communityRouter);

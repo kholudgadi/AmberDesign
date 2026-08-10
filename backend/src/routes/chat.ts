@@ -4,7 +4,7 @@ import { prisma } from "../database.js";
 import { authenticate } from "../middleware/auth.js";
 import { getIo } from "../socket.js";
 import type { AuthRequest } from "../types.js";
-import { ApiError, asyncHandler, pageSize, parse } from "../utils.js";
+import { ApiError, asyncHandler, pageCursor, pageSize, paginated, parse } from "../utils.js";
 
 export const chatRouter = Router();
 chatRouter.use(authenticate);
@@ -26,15 +26,20 @@ chatRouter.post("/conversations", asyncHandler(async (req: AuthRequest, res) => 
 }));
 
 chatRouter.get("/conversations", asyncHandler(async (req: AuthRequest, res) => {
-  const rows = await prisma.conversation.findMany({ where: { participants: { some: { userId: req.user!.uid } } }, include: { participants: { include: { user: { select: { id: true, displayName: true, avatarUrl: true } } } } }, orderBy: { updatedAt: "desc" }, take: pageSize(req.query.limit) });
-  res.json({ data: rows });
+  const limit = pageSize(req.query.limit);
+  const cursor = pageCursor(req.query.cursor);
+  const rows = await prisma.conversation.findMany({ where: { participants: { some: { userId: req.user!.uid } } }, include: { participants: { include: { user: { select: { id: true, displayName: true, avatarUrl: true } } } } }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }], ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), take: limit + 1 });
+  res.json(paginated(rows, limit));
 }));
 
 chatRouter.get("/conversations/:id/messages", asyncHandler(async (req: AuthRequest, res) => {
   const member = await prisma.conversationParticipant.findUnique({ where: { conversationId_userId: { conversationId: req.params.id, userId: req.user!.uid } } });
   if (!member) throw new ApiError(403, "Not a conversation participant", "FORBIDDEN");
-  const messages = await prisma.message.findMany({ where: { conversationId: req.params.id }, orderBy: { createdAt: "desc" }, take: pageSize(req.query.limit, 100) });
-  res.json({ data: messages.reverse() });
+  const limit = pageSize(req.query.limit, 100);
+  const cursor = pageCursor(req.query.cursor);
+  const messages = await prisma.message.findMany({ where: { conversationId: req.params.id }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), take: limit + 1 });
+  const page = paginated(messages, limit);
+  res.json({ data: page.data.reverse(), meta: page.meta });
 }));
 
 chatRouter.post("/conversations/:id/messages", asyncHandler(async (req: AuthRequest, res) => {

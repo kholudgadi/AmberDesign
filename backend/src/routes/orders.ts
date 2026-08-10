@@ -5,7 +5,7 @@ import { allow, authenticate } from "../middleware/auth.js";
 import { getIo } from "../socket.js";
 import type { AuthRequest, OrderStatus } from "../types.js";
 import { orderStatuses } from "../types.js";
-import { ApiError, asyncHandler, pageSize, parse } from "../utils.js";
+import { ApiError, asyncHandler, pageCursor, pageSize, paginated, parse } from "../utils.js";
 
 export const ordersRouter = Router();
 ordersRouter.use(authenticate);
@@ -47,9 +47,12 @@ ordersRouter.post("/", asyncHandler(async (req: AuthRequest, res) => {
 
 ordersRouter.get("/", asyncHandler(async (req: AuthRequest, res) => {
   const status = orderStatuses.includes(req.query.status as OrderStatus) ? req.query.status as OrderStatus : undefined;
+  const limit = pageSize(req.query.limit);
+  const cursor = pageCursor(req.query.cursor);
   const where = req.user!.role === "customer" ? { customerId: req.user!.uid, status } : ["designer", "vendor"].includes(req.user!.role) ? { status, lines: { some: { ownerId: req.user!.uid } } } : { status };
-  const orders = await prisma.order.findMany({ where, include: { lines: true }, orderBy: { createdAt: "desc" }, take: pageSize(req.query.limit) });
-  res.json({ data: orders.map(presentOrder) });
+  const orders = await prisma.order.findMany({ where, include: { lines: true }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), take: limit + 1 });
+  const page = paginated(orders, limit);
+  res.json({ data: page.data.map(presentOrder), meta: page.meta });
 }));
 
 ordersRouter.get("/:id", asyncHandler(async (req: AuthRequest, res) => {

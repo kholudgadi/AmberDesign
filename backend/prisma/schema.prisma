@@ -101,6 +101,38 @@ model User {
   designerReviews DesignerReview[] @relation("DesignerReviewsReceived")
   writtenDesignerReviews DesignerReview[] @relation("DesignerReviewsWritten")
   notifications Notification[]
+  following     UserFollow[] @relation("Follower")
+  followers     UserFollow[] @relation("Following")
+  reportsFiled  Report[]
+}
+
+model UserFollow {
+  followerId  String   @db.Uuid
+  followingId String   @db.Uuid
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId, createdAt])
+  @@index([followerId, createdAt])
+}
+
+model Report {
+  id         String   @id @default(uuid()) @db.Uuid
+  reporterId String   @db.Uuid
+  targetType String
+  targetId   String   @db.Uuid
+  reason     String
+  details    String?
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, targetType, targetId])
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
 }
 
 model PortfolioItem {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import { allow, authenticate } from "../middleware/auth.js";
 import type { AuthRequest } from "../types.js";
-import { ApiError, asyncHandler, pageSize, parse } from "../utils.js";
+import { ApiError, asyncHandler, pageCursor, pageSize, paginated, parse } from "../utils.js";
 
 export const catalogRouter = Router();
 const itemSchema = z.object({
@@ -17,14 +17,18 @@ const presentItem = <T extends { priceHalalas: number }>(item: T) => ({ ...item,
 
 catalogRouter.get("/items", asyncHandler(async (req, res) => {
   const limit = pageSize(req.query.limit);
+  const cursor = pageCursor(req.query.cursor);
   const q = String(req.query.q ?? "").trim();
   const items = await prisma.catalogItem.findMany({
     where: { active: true, moderationStatus: "approved", type: req.query.type === "product" || req.query.type === "service" ? req.query.type : undefined,
       categoryId: typeof req.query.categoryId === "string" ? req.query.categoryId : undefined,
       OR: q ? [{ titleAr: { contains: q, mode: "insensitive" } }, { titleEn: { contains: q, mode: "insensitive" } }, { tags: { has: q } }] : undefined },
-    orderBy: { createdAt: "desc" }, take: limit
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    take: limit + 1
   });
-  res.json({ data: items.map(presentItem), meta: { count: items.length } });
+  const page = paginated(items, limit);
+  res.json({ data: page.data.map(presentItem), meta: page.meta });
 }));
 
 catalogRouter.get("/items/:id", asyncHandler(async (req, res) => {
