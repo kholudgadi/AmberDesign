@@ -104,6 +104,30 @@ model User {
   following     UserFollow[] @relation("Follower")
   followers     UserFollow[] @relation("Following")
   reportsFiled  Report[]
+  designRequests DesignRequest[] @relation("DesignRequestCustomer")
+  assignedDesignRequests DesignRequest[] @relation("DesignRequestDesigner")
+}
+
+model DesignRequest {
+  id                 String   @id @default(uuid()) @db.Uuid
+  customerId         String   @db.Uuid
+  assignedDesignerId String?  @db.Uuid
+  category           String
+  title              String
+  specifications     Json
+  details            String?
+  referenceUrls      String[] @default([])
+  status             String   @default("submitted")
+  serviceFeeHalalas  Int      @default(0)
+  platformFeeHalalas Int      @default(0)
+  quotedHalalas      Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  customer           User     @relation("DesignRequestCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  assignedDesigner   User?    @relation("DesignRequestDesigner", fields: [assignedDesignerId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, createdAt])
+  @@index([assignedDesignerId, status, createdAt])
 }
 
 model UserFollow {

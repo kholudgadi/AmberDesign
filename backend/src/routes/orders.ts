@@ -14,6 +14,65 @@ const transitions: Record<OrderStatus, OrderStatus[]> = {
   in_progress: ["ready", "cancelled"], ready: ["shipped", "completed"], shipped: ["completed"], completed: ["refunded"], cancelled: ["refunded"], refunded: []
 };
 const presentOrder = <T extends { subtotalHalalas: number; discountHalalas: number; totalHalalas: number }>(o: T) => ({ ...o, subtotal: o.subtotalHalalas / 100, discount: o.discountHalalas / 100, total: o.totalHalalas / 100 });
+const presentDesignRequest = <T extends { serviceFeeHalalas: number; platformFeeHalalas: number; quotedHalalas: number | null }>(request: T) => ({
+  ...request,
+  kind: "design_request",
+  serviceFee: request.serviceFeeHalalas / 100,
+  platformFee: request.platformFeeHalalas / 100,
+  quotedPrice: request.quotedHalalas === null ? null : request.quotedHalalas / 100
+});
+
+ordersRouter.post("/design-requests", allow("customer"), asyncHandler(async (req: AuthRequest, res) => {
+  const input = parse(z.object({
+    category: z.enum(["fashion", "interior"]),
+    title: z.string().trim().min(2).max(150),
+    specifications: z.record(z.string(), z.string().max(500)),
+    details: z.string().trim().max(2000).optional(),
+    referenceUrls: z.array(z.string().url()).max(10).default([]),
+    serviceFee: z.number().nonnegative().max(1_000_000).default(0),
+    platformFee: z.number().nonnegative().max(1_000_000).default(0)
+  }).strict(), req.body);
+  const { serviceFee, platformFee, ...data } = input;
+  const request = await prisma.designRequest.create({ data: {
+    ...data,
+    specifications: JSON.parse(JSON.stringify(data.specifications)),
+    customerId: req.user!.uid,
+    serviceFeeHalalas: Math.round((serviceFee ?? 0) * 100),
+    platformFeeHalalas: Math.round((platformFee ?? 0) * 100)
+  } });
+  res.status(201).json({ data: presentDesignRequest(request) });
+}));
+
+ordersRouter.get("/design-requests", asyncHandler(async (req: AuthRequest, res) => {
+  const limit = pageSize(req.query.limit);
+  const cursor = pageCursor(req.query.cursor);
+  const where = req.user!.role === "customer"
+    ? { customerId: req.user!.uid }
+    : req.user!.role === "designer"
+      ? { assignedDesignerId: req.user!.uid }
+      : {};
+  const rows = await prisma.designRequest.findMany({
+    where,
+    include: { assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    take: limit + 1
+  });
+  const page = paginated(rows, limit);
+  res.json({ data: page.data.map(presentDesignRequest), meta: page.meta });
+}));
+
+ordersRouter.get("/design-requests/:id", asyncHandler(async (req: AuthRequest, res) => {
+  const request = await prisma.designRequest.findUnique({
+    where: { id: req.params.id },
+    include: { assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } } }
+  });
+  if (!request) throw new ApiError(404, "Design request not found", "NOT_FOUND");
+  if (![request.customerId, request.assignedDesignerId].includes(req.user!.uid) && !["admin", "moderator"].includes(req.user!.role)) {
+    throw new ApiError(403, "Cannot view this design request", "FORBIDDEN");
+  }
+  res.json({ data: presentDesignRequest(request) });
+}));
 
 ordersRouter.post("/", asyncHandler(async (req: AuthRequest, res) => {
   const input = parse(z.object({

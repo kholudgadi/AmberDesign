@@ -60,11 +60,14 @@ class _MyOrdersViewState extends State<MyOrdersView> {
   Widget _orderCard(Map<String, dynamic> order) {
     final lines = order['lines'] as List<dynamic>? ?? const [];
     final first = lines.isEmpty ? null : lines.first as Map<String, dynamic>;
-    final title = first?['titleAr']?.toString() ?? first?['titleEn']?.toString() ?? 'طلب #${order['id'].toString().substring(0, 8)}';
+    final title = order['title']?.toString() ?? first?['titleAr']?.toString() ?? first?['titleEn']?.toString() ?? 'طلب #${order['id'].toString().substring(0, 8)}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TrackOrderScreen(orderId: order['id'].toString()))),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TrackOrderScreen(
+          orderId: order['id'].toString(),
+          kind: order['kind']?.toString() ?? 'order',
+        ))),
         borderRadius: BorderRadius.circular(20),
         child: GlassCard(
           padding: const EdgeInsets.all(18),
@@ -76,7 +79,7 @@ class _MyOrdersViewState extends State<MyOrdersView> {
               const SizedBox(height: 8),
               Text(_statusLabel(order['status']?.toString()), style: const TextStyle(color: AppColors.textMuted)),
               const SizedBox(height: 6),
-              Text('${order['total'] ?? 0} ر.س', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+              Text('${order['total'] ?? order['quotedPrice'] ?? (order['serviceFee'] ?? 0) + (order['platformFee'] ?? 0)} ر.س', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
             ])),
             const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.textMuted),
           ]),
@@ -95,5 +98,6 @@ class _MyOrdersViewState extends State<MyOrdersView> {
     'completed': 'مكتمل',
     'cancelled': 'ملغي',
     'refunded': 'مسترجع',
+    'submitted': 'تم إرسال الطلب',
   }[status] ?? status ?? '';
 }

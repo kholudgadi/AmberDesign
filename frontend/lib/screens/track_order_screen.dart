@@ -9,7 +9,8 @@ import 'chat_detail_screen.dart';
 
 class TrackOrderScreen extends StatefulWidget {
   final String orderId;
-  const TrackOrderScreen({super.key, required this.orderId});
+  final String kind;
+  const TrackOrderScreen({super.key, required this.orderId, this.kind = 'order'});
 
   @override
   State<TrackOrderScreen> createState() => _TrackOrderScreenState();
@@ -25,19 +26,24 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   @override
   void initState() {
     super.initState();
-    _order = OrdersService.instance.detail(widget.orderId);
+    _order = OrdersService.instance.detail(widget.orderId, kind: widget.kind);
   }
 
   Future<void> _chat(Map<String, dynamic> order) async {
     final lines = order['lines'] as List<dynamic>? ?? const [];
-    final ownerId = lines.isEmpty ? null : (lines.first as Map<String, dynamic>)['ownerId']?.toString();
+    final ownerId = widget.kind == 'design_request'
+        ? (order['assignedDesigner'] as Map<String, dynamic>?)?['id']?.toString()
+        : (lines.isEmpty ? null : (lines.first as Map<String, dynamic>)['ownerId']?.toString());
     if (ownerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لا يوجد مصمم مرتبط بهذا الطلب')));
       return;
     }
     setState(() => _openingChat = true);
     try {
-      final conversationId = await ChatService.instance.openConversation(participantId: ownerId, orderId: widget.orderId);
+      final conversationId = await ChatService.instance.openConversation(
+        participantId: ownerId,
+        orderId: widget.kind == 'order' ? widget.orderId : null,
+      );
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(
         conversationId: conversationId,
@@ -63,7 +69,9 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
               if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return const Center(child: Text('تعذر تحميل تفاصيل الطلب'));
               final order = snapshot.data!;
-              final current = _statuses.indexOf(order['status']?.toString() ?? '');
+              final current = widget.kind == 'design_request'
+                  ? 0
+                  : _statuses.indexOf(order['status']?.toString() ?? '');
               final history = order['history'] as List<dynamic>? ?? const [];
               return ListView(
                 padding: const EdgeInsets.all(24),
