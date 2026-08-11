@@ -12,10 +12,11 @@ class ChatService {
         .cast<Map<String, dynamic>>();
   }
 
-  Future<String> openConversation({required String participantId, String? orderId}) async {
+  Future<String> openConversation({required String participantId, String? orderId, String? designRequestId}) async {
     final response = await _api.post('/chat/conversations', {
       'participantId': participantId,
       if (orderId != null) 'orderId': orderId,
+      if (designRequestId != null) 'designRequestId': designRequestId,
     }, token: await AuthService.instance.accessToken());
     return (response['data'] as Map<String, dynamic>)['id'] as String;
   }

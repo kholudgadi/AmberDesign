@@ -10,7 +10,7 @@ export const chatRouter = Router();
 chatRouter.use(authenticate);
 
 chatRouter.post("/conversations", asyncHandler(async (req: AuthRequest, res) => {
-  const input = parse(z.object({ participantId: z.string().uuid(), orderId: z.string().uuid().optional() }), req.body);
+  const input = parse(z.object({ participantId: z.string().uuid(), orderId: z.string().uuid().optional(), designRequestId: z.string().uuid().optional() }).refine(v => !(v.orderId && v.designRequestId), "Only one request reference is allowed"), req.body);
   if (input.participantId === req.user!.uid) throw new ApiError(422, "Cannot chat with yourself", "INVALID_PARTICIPANT");
   const participant = await prisma.user.findFirst({ where: { id: input.participantId, disabled: false } });
   if (!participant) throw new ApiError(404, "Participant not found", "NOT_FOUND");
@@ -19,9 +19,15 @@ chatRouter.post("/conversations", asyncHandler(async (req: AuthRequest, res) => 
     const allowed = order && [req.user!.uid, input.participantId].every(id => id === order.customerId || order.lines.some(l => l.ownerId === id));
     if (!allowed) throw new ApiError(403, "Participants are not related to this order", "FORBIDDEN");
   }
+  if (input.designRequestId) {
+    const request = await prisma.designRequest.findUnique({ where: { id: input.designRequestId } });
+    const allowed = request && request.assignedDesignerId && [req.user!.uid, input.participantId].every(id => id === request.customerId || id === request.assignedDesignerId);
+    if (!allowed) throw new ApiError(403, "Participants are not assigned to this design request", "FORBIDDEN");
+  }
   const participants = [req.user!.uid, input.participantId].sort();
-  const key = `${participants.join(":")}:${input.orderId ?? "general"}`;
-  const conversation = await prisma.conversation.upsert({ where: { key }, update: {}, create: { key, orderId: input.orderId, participants: { create: participants.map(userId => ({ userId })) } } });
+  const reference = input.orderId ?? (input.designRequestId ? `design-request:${input.designRequestId}` : "general");
+  const key = `${participants.join(":")}:${reference}`;
+  const conversation = await prisma.conversation.upsert({ where: { key }, update: {}, create: { key, orderId: input.orderId, designRequestId: input.designRequestId, participants: { create: participants.map(userId => ({ userId })) } } });
   res.status(201).json({ data: { id: conversation.id } });
 }));
 

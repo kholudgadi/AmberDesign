@@ -22,6 +22,8 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
 
   static const _statuses = ['pending_payment', 'confirmed', 'accepted', 'in_progress', 'ready', 'shipped', 'completed'];
   static const _labels = ['بانتظار الدفع', 'تم تأكيد الطلب', 'قبل المصمم الطلب', 'قيد التنفيذ', 'جاهز', 'تم الشحن', 'مكتمل'];
+  static const _designStatuses = ['submitted', 'assigned', 'in_progress', 'ready', 'completed'];
+  static const _designLabels = ['تم إرسال الطلب', 'تم تعيين المصمم', 'قيد التنفيذ', 'جاهز للمراجعة', 'مكتمل'];
 
   @override
   void initState() {
@@ -47,11 +49,12 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
       final conversationId = await ChatService.instance.openConversation(
         participantId: ownerId,
         orderId: widget.kind == 'order' ? widget.orderId : null,
+        designRequestId: widget.kind == 'design_request' ? widget.orderId : null,
       );
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(
         conversationId: conversationId,
-        participant: {'id': ownerId, 'displayName': 'المصمم'},
+        participant: {'id': ownerId, 'displayName': assignedDesigner?['displayName']?.toString() ?? 'المصمم'},
       )));
     } on ApiException catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
@@ -73,20 +76,20 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
               if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return const Center(child: Text('تعذر تحميل تفاصيل الطلب'));
               final order = snapshot.data!;
-              final current = widget.kind == 'design_request'
-                  ? 0
-                  : _statuses.indexOf(order['status']?.toString() ?? '');
+              final statuses = widget.kind == 'design_request' ? _designStatuses : _statuses;
+              final labels = widget.kind == 'design_request' ? _designLabels : _labels;
+              final current = statuses.indexOf(order['status']?.toString() ?? '');
               final history = order['history'] as List<dynamic>? ?? const [];
               return ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
                   GlassCard(
                     padding: const EdgeInsets.all(22),
-                    child: Column(children: List.generate(_statuses.length, (index) {
+                    child: Column(children: List.generate(statuses.length, (index) {
                       final completed = index <= current;
                       Map<String, dynamic>? event;
                       for (final item in history.cast<Map<String, dynamic>>()) {
-                        if (item['status'] == _statuses[index]) {
+                        if (item['status'] == statuses[index]) {
                           event = item;
                           break;
                         }
@@ -94,13 +97,13 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                       return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Column(children: [
                           Container(width: 24, height: 24, decoration: BoxDecoration(shape: BoxShape.circle, color: completed ? AppColors.textDark : Colors.transparent, border: Border.all(color: completed ? AppColors.textDark : AppColors.textMuted)), child: completed ? const Icon(Icons.check, size: 14, color: Colors.white) : null),
-                          if (index < _statuses.length - 1) Container(width: 2, height: 44, color: completed ? AppColors.textDark : Colors.black12),
+                          if (index < statuses.length - 1) Container(width: 2, height: 44, color: completed ? AppColors.textDark : Colors.black12),
                         ]),
                         const SizedBox(width: 14),
                         Expanded(child: Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(_labels[index], style: TextStyle(fontWeight: completed ? FontWeight.bold : FontWeight.normal, color: completed ? AppColors.textDark : AppColors.textMuted)),
+                            Text(labels[index], style: TextStyle(fontWeight: completed ? FontWeight.bold : FontWeight.normal, color: completed ? AppColors.textDark : AppColors.textMuted)),
                             if (event != null) Text(event['note']?.toString() ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                           ]),
                         )),

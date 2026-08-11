@@ -62,6 +62,46 @@ ordersRouter.get("/design-requests", asyncHandler(async (req: AuthRequest, res) 
   res.json({ data: page.data.map(presentDesignRequest), meta: page.meta });
 }));
 
+ordersRouter.get("/design-requests-available", allow("designer"), asyncHandler(async (req: AuthRequest, res) => {
+  const limit = pageSize(req.query.limit);
+  const cursor = pageCursor(req.query.cursor);
+  const rows = await prisma.designRequest.findMany({
+    where: { assignedDesignerId: null, status: "submitted" },
+    include: { customer: { select: { id: true, displayName: true, avatarUrl: true, city: true } } },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    take: limit + 1
+  });
+  const page = paginated(rows, limit);
+  res.json({ data: page.data.map(presentDesignRequest), meta: page.meta });
+}));
+
+ordersRouter.post("/design-requests/:id/claim", allow("designer"), asyncHandler(async (req: AuthRequest, res) => {
+  const result = await prisma.$transaction(async tx => {
+    const claimed = await tx.designRequest.updateMany({
+      where: { id: req.params.id, assignedDesignerId: null, status: "submitted" },
+      data: { assignedDesignerId: req.user!.uid, status: "assigned" }
+    });
+    if (!claimed.count) throw new ApiError(409, "Design request is no longer available", "REQUEST_ALREADY_CLAIMED");
+    const request = await tx.designRequest.findUniqueOrThrow({ where: { id: req.params.id } });
+    const participants = [request.customerId, req.user!.uid].sort();
+    const key = `${participants.join(":")}:design-request:${request.id}`;
+    const conversation = await tx.conversation.upsert({
+      where: { key }, update: {},
+      create: { key, designRequestId: request.id, participants: { create: participants.map(userId => ({ userId })) } }
+    });
+    await tx.notification.create({ data: {
+      userId: request.customerId, type: "design_request_assigned",
+      titleAr: "تم تعيين مصمم لطلبك", titleEn: "A designer was assigned",
+      bodyAr: "يمكنك الآن التواصل مع المصمم عبر المحادثة", bodyEn: "You can now chat with your designer",
+      data: { designRequestId: request.id, designerId: req.user!.uid, conversationId: conversation.id }
+    } });
+    return { request, conversationId: conversation.id };
+  });
+  getIo().to(`user:${result.request.customerId}`).emit("design-request:assigned", result);
+  res.json({ data: { ...presentDesignRequest(result.request), conversationId: result.conversationId } });
+}));
+
 ordersRouter.get("/design-requests/:id", asyncHandler(async (req: AuthRequest, res) => {
   const request = await prisma.designRequest.findUnique({
     where: { id: req.params.id },

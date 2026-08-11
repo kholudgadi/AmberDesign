@@ -125,6 +125,7 @@ model DesignRequest {
   updatedAt          DateTime @updatedAt
   customer           User     @relation("DesignRequestCustomer", fields: [customerId], references: [id], onDelete: Cascade)
   assignedDesigner   User?    @relation("DesignRequestDesigner", fields: [assignedDesignerId], references: [id], onDelete: SetNull)
+  conversations      Conversation[]
 
   @@index([customerId, createdAt])
   @@index([assignedDesignerId, status, createdAt])
@@ -391,13 +392,17 @@ model Conversation {
   id String @id @default(uuid()) @db.Uuid
   key String @unique
   orderId String? @db.Uuid
+  designRequestId String? @db.Uuid
   lastMessage String?
   lastSenderId String? @db.Uuid
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   order Order? @relation(fields: [orderId], references: [id])
+  designRequest DesignRequest? @relation(fields: [designRequestId], references: [id])
   participants ConversationParticipant[]
   messages Message[]
+
+  @@index([designRequestId])
 }
 
 model ConversationParticipant {

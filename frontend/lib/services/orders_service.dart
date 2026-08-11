@@ -44,4 +44,14 @@ class OrdersService {
     }, token: await AuthService.instance.accessToken());
     return response['data'] as Map<String, dynamic>;
   }
+
+  Future<List<Map<String, dynamic>>> availableDesignRequests() async {
+    final response = await _api.get('/orders/design-requests-available', token: await AuthService.instance.accessToken());
+    return (response['data'] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> claimDesignRequest(String id) async {
+    final response = await _api.post('/orders/design-requests/$id/claim', const {}, token: await AuthService.instance.accessToken());
+    return response['data'] as Map<String, dynamic>;
+  }
 }
