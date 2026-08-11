@@ -3,10 +3,11 @@ import '../utils/app_colors.dart';
 import '../widgets/custom_top_bar.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/app_background.dart';
-import 'otp_verification_screen.dart';
-import '../utils/global_data.dart'; 
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import 'home_screen.dart';
+import 'designer_domain_screen.dart';
 
-/// Registration form that creates either a customer or designer account.
 class SignupScreen extends StatefulWidget {
   final bool isDesigner;
 
@@ -17,11 +18,11 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  // Controls the two independent password-visibility buttons.
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
-  // Creates a text controller for each input field so the form can read and validate values.
+  // created TextEditingController for each input field to manage and read the text
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -29,12 +30,11 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  // Tracks whether the form has enough data to enable the next action.
+  // This boolean will track if all fields are filled to enable the "Next" button
   bool _isFormValid = false;
 
   @override
   void initState() {
-    // Re-check validity whenever any registration field changes.
     super.initState();
     // Adding listeners to each controller to check form validity whenever the text changes
     _nameController.addListener(_checkFormValidity);
@@ -44,9 +44,8 @@ class _SignupScreenState extends State<SignupScreen> {
     _confirmPasswordController.addListener(_checkFormValidity);
   }
 
-  // Checks whether all required fields have values and updates the form state.
+  // This method checks if all input fields are filled and updates the _isFormValid state accordingly
   void _checkFormValidity() {
-    // Keeps the continue button disabled until all required values are valid.
     bool isValid =
         _nameController.text.isNotEmpty &&
         _emailController.text.isNotEmpty &&
@@ -62,9 +61,42 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  Future<void> _register() async {
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمتا المرور غير متطابقتين')));
+      return;
+    }
+    if (_passwordController.text.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة المرور يجب ألا تقل عن 8 أحرف')));
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await AuthService.instance.register(
+        email: _emailController.text, password: _passwordController.text,
+        displayName: _nameController.text, phone: _phoneController.text,
+        isDesigner: widget.isDesigner,
+      );
+      if (!mounted) return;
+      if (widget.isDesigner) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DesignerDomainScreen()),
+        );
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (_) => false,
+        );
+      }
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   void dispose() {
-    // Releases every controller owned by this state object.
     // Dispose of the controllers when the widget is removed from the widget tree to free up resources
     _nameController.dispose();
     _emailController.dispose();
@@ -76,7 +108,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Uses the current validity state to control whether registration can continue.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -123,7 +154,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // Connects each custom text field to the corresponding controller for input handling.
+                        // connecting the CustomTextField widgets with their respective controllers to manage input
                         CustomTextField(
                           label: 'الاسم الكامل',
                           hint: 'محمد العمري',
@@ -179,26 +210,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
                         // The "Next" button is enabled only when all fields are filled
                         ElevatedButton(
-                          // Disables the button until the form is fully filled and valid.
-                          onPressed: _isFormValid
-                              ? () {
-                                if (widget.isDesigner) {
-                                    GlobalData.designerProfile['name'] = _nameController.text.trim();
-                                  }
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => OtpVerificationScreen(
-                                        email: _emailController
-                                            .text, // Passing the email to the OTP verification screen
-                                        isDesigner: widget.isDesigner,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
+                          // The onPressed callback is set to null when the form is not valid, which disables the button. When the form is valid, it prints a debug message.
+                          onPressed: _isFormValid && !_isLoading ? _register : null,
                           style: ElevatedButton.styleFrom(
-                            // Adjusts the button appearance based on whether the form is valid.
+                            // The background color changes based on the form's validity. If the form is valid, it uses a darker color; if not, it uses a muted color with opacity.
                             backgroundColor: _isFormValid
                                 ? const Color.fromRGBO(38, 23, 50, 0.8)
                                 : AppColors.textMuted.withOpacity(0.5),
@@ -210,16 +225,15 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             elevation: _isFormValid
                                 ? 8
-                                : 0, // Keeps the disabled button visually flat.
+                                : 0, // Elevation is set to 0 when the button is disabled to give a flat appearance
                           ),
-                          child: const Text(
-                            'التالي',
-                            style: TextStyle(
+                          child: _isLoading
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('إنشاء الحساب', style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                            ),
-                          ),
+                            )),
                         ),
 
                         const SizedBox(height: 40),

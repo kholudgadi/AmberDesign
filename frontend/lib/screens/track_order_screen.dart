@@ -1,339 +1,132 @@
 import 'package:flutter/material.dart';
+import '../services/api_client.dart';
+import '../services/chat_service.dart';
+import '../services/orders_service.dart';
 import '../utils/app_colors.dart';
-import '../widgets/glass_card.dart';
 import '../widgets/app_background.dart';
+import '../widgets/glass_card.dart';
+import 'chat_detail_screen.dart';
 
-/// Visualizes a selected order's current status as a unified 7-step timeline.
-class TrackOrderScreen extends StatelessWidget {
-  final Map<String, dynamic> order;
-
-  const TrackOrderScreen({super.key, required this.order});
+class TrackOrderScreen extends StatefulWidget {
+  final String orderId;
+  final String kind;
+  const TrackOrderScreen({super.key, required this.orderId, this.kind = 'order'});
 
   @override
-  Widget build(BuildContext context) {
-    // Maps the order status to the corresponding index in the unified 7-step timeline.
-    int currentStepIndex = 0;
-    switch (order['status']) {
-      case 'تم التقديم':
-      case 'تم إرسال طلبك':
-        currentStepIndex = 0;
-        break;
-      case 'المصممة تراجع طلبك':
-        currentStepIndex = 1;
-        break;
-      case 'عرض السعر من المصممة':
-        currentStepIndex = 2;
-        break;
-      case 'موافقتك والدفع':
-        currentStepIndex = 3;
-        break;
-      case 'قيد التنفيذ':
-      case 'بدء التصميم':
-        currentStepIndex = 4;
-        break;
-      case 'قيد المراجعة':
-      case 'المراجعة':
-        currentStepIndex = 5;
-        break;
-      case 'مكتمل':
-        currentStepIndex = 6;
-        break;
-      default:
-        currentStepIndex = 0;
+  State<TrackOrderScreen> createState() => _TrackOrderScreenState();
+}
+
+class _TrackOrderScreenState extends State<TrackOrderScreen> {
+  late Future<Map<String, dynamic>> _order;
+  bool _openingChat = false;
+
+  static const _statuses = ['pending_payment', 'confirmed', 'accepted', 'in_progress', 'ready', 'shipped', 'completed'];
+  static const _labels = ['بانتظار الدفع', 'تم تأكيد الطلب', 'قبل المصمم الطلب', 'قيد التنفيذ', 'جاهز', 'تم الشحن', 'مكتمل'];
+  static const _designStatuses = ['submitted', 'assigned', 'in_progress', 'ready', 'completed'];
+  static const _designLabels = ['تم إرسال الطلب', 'تم تعيين المصمم', 'قيد التنفيذ', 'جاهز للمراجعة', 'مكتمل'];
+
+  @override
+  void initState() {
+    super.initState();
+    _order = OrdersService.instance.detail(widget.orderId, kind: widget.kind);
+  }
+
+  Future<void> _chat(Map<String, dynamic> order) async {
+    final lines = order['lines'] as List<dynamic>? ?? const [];
+    final assignedDesigner = order['assignedDesigner'] as Map<String, dynamic>?;
+    String? ownerId;
+    if (widget.kind == 'design_request') {
+      ownerId = assignedDesigner?['id']?.toString();
+    } else if (lines.isNotEmpty) {
+      ownerId = (lines.first as Map<String, dynamic>)['ownerId']?.toString();
     }
+    if (ownerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لا يوجد مصمم مرتبط بهذا الطلب')));
+      return;
+    }
+    setState(() => _openingChat = true);
+    try {
+      final conversationId = await ChatService.instance.openConversation(
+        participantId: ownerId,
+        orderId: widget.kind == 'order' ? widget.orderId : null,
+        designRequestId: widget.kind == 'design_request' ? widget.orderId : null,
+      );
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(
+        conversationId: conversationId,
+        participant: {'id': ownerId, 'displayName': assignedDesigner?['displayName']?.toString() ?? 'المصمم'},
+      )));
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _openingChat = false);
+    }
+  }
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: const Text(
-            'تتبع الطلب',
-            style: TextStyle(
-              color: AppColors.textDark,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: true,
-        ),
-        body: AppBackground(
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
+  @override
+  Widget build(BuildContext context) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: Scaffold(
+      appBar: AppBar(title: const Text('تتبع الطلب')),
+      body: AppBackground(
+        child: SafeArea(
+          child: FutureBuilder<Map<String, dynamic>>(
+            future: _order,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+              if (snapshot.hasError) return const Center(child: Text('تعذر تحميل تفاصيل الطلب'));
+              final order = snapshot.data!;
+              final statuses = widget.kind == 'design_request' ? _designStatuses : _statuses;
+              final labels = widget.kind == 'design_request' ? _designLabels : _labels;
+              final current = statuses.indexOf(order['status']?.toString() ?? '');
+              final history = order['history'] as List<dynamic>? ?? const [];
+              return ListView(
+                padding: const EdgeInsets.all(24),
                 children: [
-                  // Order summary section.
                   GlassCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'طلب ${order['id']}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${order['service'] ?? order['title']} • ${order['designer']}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                (order['statusColor'] as Color? ??
-                                        AppColors.textDark)
-                                    .withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            order['status'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: order['statusColor'] ?? AppColors.textDark,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    padding: const EdgeInsets.all(22),
+                    child: Column(children: List.generate(statuses.length, (index) {
+                      final completed = index <= current;
+                      Map<String, dynamic>? event;
+                      for (final item in history.cast<Map<String, dynamic>>()) {
+                        if (item['status'] == statuses[index]) {
+                          event = item;
+                          break;
+                        }
+                      }
+                      return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Column(children: [
+                          Container(width: 24, height: 24, decoration: BoxDecoration(shape: BoxShape.circle, color: completed ? AppColors.textDark : Colors.transparent, border: Border.all(color: completed ? AppColors.textDark : AppColors.textMuted)), child: completed ? const Icon(Icons.check, size: 14, color: Colors.white) : null),
+                          if (index < statuses.length - 1) Container(width: 2, height: 44, color: completed ? AppColors.textDark : Colors.black12),
+                        ]),
+                        const SizedBox(width: 14),
+                        Expanded(child: Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(labels[index], style: TextStyle(fontWeight: completed ? FontWeight.bold : FontWeight.normal, color: completed ? AppColors.textDark : AppColors.textMuted)),
+                            if (event != null) Text(event['note']?.toString() ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                          ]),
+                        )),
+                      ]);
+                    })),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Unified timeline rendered inside a glass card.
+                  const SizedBox(height: 20),
                   GlassCard(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'التقدم',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        _buildTimelineStep(
-                          title: 'تم إرسال طلبك',
-                          subtitle: currentStepIndex == 0
-                              ? 'بانتظار استلام المصممة للطلب'
-                              : null,
-                          isCompleted: currentStepIndex >= 0,
-                          isLastCompleted: currentStepIndex == 0,
-                        ),
-                        _buildTimelineStep(
-                          title: 'المصممة تراجع طلبك',
-                          subtitle: currentStepIndex == 1
-                              ? 'جاري دراسة المتطلبات والمواصفات'
-                              : null,
-                          isCompleted: currentStepIndex >= 1,
-                          isLastCompleted: currentStepIndex == 1,
-                        ),
-                        _buildTimelineStep(
-                          title: 'عرض السعر من المصممة',
-                          subtitle: currentStepIndex == 2
-                              ? 'المصممة حددت السعر، بانتظار قرارك'
-                              : null,
-                          isCompleted: currentStepIndex >= 2,
-                          isLastCompleted: currentStepIndex == 2,
-                        ),
-                        _buildTimelineStep(
-                          title: 'موافقتك والدفع',
-                          subtitle: currentStepIndex == 3
-                              ? 'تم الدفع بنجاح واعتماد الطلب'
-                              : null,
-                          isCompleted: currentStepIndex >= 3,
-                          isLastCompleted: currentStepIndex == 3,
-                        ),
-                        _buildTimelineStep(
-                          title: 'بدء التصميم',
-                          subtitle: currentStepIndex == 4
-                              ? 'المصممة تعمل على تصميمك الآن'
-                              : null,
-                          isCompleted: currentStepIndex >= 4,
-                          isLastCompleted: currentStepIndex == 4,
-                        ),
-                        _buildTimelineStep(
-                          title: 'المراجعة',
-                          subtitle: currentStepIndex == 5
-                              ? 'التصميم المبدئي جاهز لمراجعتك'
-                              : null,
-                          isCompleted: currentStepIndex >= 5,
-                          isLastCompleted: currentStepIndex == 5,
-                        ),
-                        _buildTimelineStep(
-                          title: 'مكتمل',
-                          subtitle: currentStepIndex == 6
-                              ? 'تم تسليم التصميم النهائي بنجاح'
-                              : null,
-                          isCompleted: currentStepIndex >= 6,
-                          isLastCompleted: currentStepIndex == 6,
-                          isLastStep: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Designer contact details.
-                  GlassCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundImage: order['image'] != null
-                              ? (order['image'].toString().startsWith('http')
-                                    ? NetworkImage(order['image'])
-                                    : AssetImage(order['image'])
-                                          as ImageProvider)
-                              : null,
-                          backgroundColor: Colors.grey.withOpacity(0.2),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                order['designer'],
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textDark,
-                                ),
-                              ),
-                              const Text(
-                                'تواصل مع المصممة لأي استفسار',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(
-                            Icons.chat_bubble_outline,
-                            color: AppColors.textDark,
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.all(18),
+                    child: ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                      title: const Text('التواصل مع المصمم'),
+                      subtitle: const Text('المحادثة مرتبطة بهذا الطلب وتحفظ في حسابك'),
+                      trailing: _openingChat ? const CircularProgressIndicator() : const Icon(Icons.chat_bubble_outline),
+                      onTap: _openingChat ? null : () => _chat(order),
                     ),
                   ),
                 ],
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTimelineStep({
-    required String title,
-    String? subtitle,
-    required bool isCompleted,
-    required bool isLastCompleted,
-    bool isLastStep = false,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isCompleted ? AppColors.textDark : Colors.transparent,
-                border: Border.all(
-                  color: isCompleted
-                      ? AppColors.textDark
-                      : AppColors.textMuted.withOpacity(0.5),
-                  width: 2,
-                ),
-              ),
-              child: isCompleted && !isLastCompleted
-                  ? const Icon(Icons.check, size: 14, color: Colors.white)
-                  : (isLastCompleted
-                        ? Container(
-                            margin: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          )
-                        : null),
-            ),
-            if (!isLastStep)
-              Container(
-                width: 2,
-                height: 40,
-                color: isCompleted
-                    ? AppColors.textDark
-                    : AppColors.textMuted.withOpacity(0.3),
-              ),
-          ],
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
-                  color: isCompleted ? AppColors.textDark : AppColors.textMuted,
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-              if (!isLastStep) const SizedBox(height: 32),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+    ),
+  );
 }

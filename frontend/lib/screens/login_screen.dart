@@ -3,9 +3,11 @@ import '../utils/app_colors.dart';
 import '../widgets/custom_top_bar.dart';
 import '../widgets/custom_text_field.dart';
 import '../screens/signup_screen.dart';
-import '../screens/home_screen.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import 'home_screen.dart';
+import 'designer_home_screen.dart';
 
-/// Sign-in screen shared by customer and designer account flows.
 class LoginScreen extends StatefulWidget {
   final bool isDesigner;
   const LoginScreen({super.key, this.isDesigner = false});
@@ -15,12 +17,49 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controls whether the password text is masked in the form field.
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_emailController.text.trim().isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل البريد الإلكتروني وكلمة المرور')));
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      final user = await AuthService.instance.login(_emailController.text, _passwordController.text);
+      if (!mounted) return;
+      final expectedRole = widget.isDesigner ? 'designer' : 'customer';
+      if (user['role'] != expectedRole) {
+        await AuthService.instance.clearSession();
+        throw ApiException(widget.isDesigner ? 'هذا الحساب ليس حساب مصمم' : 'استخدم بوابة دخول المصممين لهذا الحساب', 403);
+      }
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => widget.isDesigner
+              ? const DesignerHomeScreen()
+              : const HomeScreen(),
+        ),
+        (_) => false,
+      );
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Tailors labels and the next route to the selected account role.
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -70,15 +109,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 40),
 
-                          // Renders the email input field.
-                          const CustomTextField(
+                          // calling the email field
+                          CustomTextField(
                             label: 'البريد الإلكتروني',
                             hint: 'example@mail.com',
                             keyboardType: TextInputType.emailAddress,
+                            controller: _emailController,
                           ),
                           const SizedBox(height: 20),
 
-                          // Renders the password input field with toggle support.
+                          // calling the password field
                           CustomTextField(
                             label: 'كلمة المرور',
                             hint: '••••••••',
@@ -89,6 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _obscurePassword = !_obscurePassword;
                               });
                             },
+                            controller: _passwordController,
                           ),
 
                           const SizedBox(height: 10),
@@ -111,31 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 10),
                           ElevatedButton(
-                            onPressed: () {
-                              debugPrint("تسجيل الدخول...");
-
-                              // Route the user based on whether the account is a designer or a customer.
-                              if (widget.isDesigner) {
-                                // Redirect the designer to the home screen for now.
-                                // This is a temporary route until a dedicated designer dashboard exists.
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const HomeScreen(),
-                                  ),
-                                  (Route<dynamic> route) => false,
-                                );
-                              } else {
-                                // Redirect the customer to the home screen.
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const HomeScreen(),
-                                  ),
-                                  (Route<dynamic> route) => false,
-                                );
-                              }
-                            },
+                            onPressed: _isLoading ? null : _login,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color.fromRGBO(
                                 38,
@@ -150,14 +167,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               elevation: 8,
                               shadowColor: Colors.black.withOpacity(0.3),
                             ),
-                            child: const Text(
-                              'تسجيل الدخول',
-                              style: TextStyle(
+                            child: _isLoading
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('تسجيل الدخول', style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                              ),
-                            ),
+                              )),
                           ),
                           const SizedBox(height: 16),
                           Row(
@@ -194,11 +210,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => SignupScreen(
-                                    isDesigner: widget.isDesigner,
-                                  ),
+                                  builder: (context) => SignupScreen(isDesigner: widget.isDesigner),
                                 ),
-                              );
+                              ); 
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),

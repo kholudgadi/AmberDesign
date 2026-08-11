@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/api_client.dart';
+import '../services/orders_service.dart';
 import '../utils/app_colors.dart';
-import 'track_order_screen.dart'; 
 import '../widgets/glass_card.dart';
-import '../utils/global_data.dart'; 
+import 'track_order_screen.dart';
 
 class MyOrdersView extends StatefulWidget {
   const MyOrdersView({super.key});
@@ -12,113 +13,91 @@ class MyOrdersView extends StatefulWidget {
 }
 
 class _MyOrdersViewState extends State<MyOrdersView> {
-  @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> allOrders = GlobalData.myOrders;
+  late Future<List<Map<String, dynamic>>> _orders;
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 100), 
-      itemCount: allOrders.length,
-      itemBuilder: (context, index) {
-        final order = allOrders[index];
-        return _buildOrderCard(context, order);
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    _reload();
   }
 
-  Widget _buildOrderCard(BuildContext context, Map<String, dynamic> order) {
+  void _reload() => _orders = OrdersService.instance.list();
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
+    future: _orders,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const Padding(padding: EdgeInsets.all(60), child: Center(child: CircularProgressIndicator()));
+      }
+      if (snapshot.hasError) {
+        final message = snapshot.error is ApiException
+            ? (snapshot.error as ApiException).message
+            : 'تعذر تحميل الطلبات';
+        return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(message),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: () => setState(_reload), child: const Text('إعادة المحاولة')),
+        ]));
+      }
+      final orders = snapshot.data!;
+      if (orders.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.all(60),
+          child: Center(child: Text('لا توجد طلبات حقيقية في حسابك حتى الآن')),
+        );
+      }
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 100),
+        itemCount: orders.length,
+        itemBuilder: (_, index) => _orderCard(orders[index]),
+      );
+    },
+  );
+
+  Widget _orderCard(Map<String, dynamic> order) {
+    final lines = order['lines'] as List<dynamic>? ?? const [];
+    final first = lines.isEmpty ? null : lines.first as Map<String, dynamic>;
+    final title = order['title']?.toString() ?? first?['titleAr']?.toString() ?? first?['titleEn']?.toString() ?? 'طلب #${order['id'].toString().substring(0, 8)}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TrackOrderScreen(order: order), 
-            ),
-          );
-        },
+      child: InkWell(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TrackOrderScreen(
+          orderId: order['id'].toString(),
+          kind: order['kind']?.toString() ?? 'order',
+        ))),
+        borderRadius: BorderRadius.circular(20),
         child: GlassCard(
-          height: 140,
-          borderRadius: 20,
-          padding: EdgeInsets.zero, 
-          child: Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              order['title'] ?? order['service'] ?? 'طلب تصميم',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: (order['statusColor'] as Color? ?? AppColors.textDark).withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              order['status'] ?? '',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: order['statusColor'] ?? AppColors.textDark),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        order['designer'] ?? 'بانتظار المصممة',
-                        style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            order['date'] ?? 'اليوم',
-                            style: TextStyle(fontSize: 12, color: AppColors.textMuted.withOpacity(0.8)),
-                          ),
-                          Text(
-                            order['price'] ?? 'بانتظار التسعير', 
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                height: double.infinity,
-                child: order['image'] != null
-                    ? (order['image'].toString().startsWith('http') 
-                        ? Image.network( 
-                            order['image'],
-                            fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
-                          )
-                        : Image.asset( 
-                            order['image'],
-                            fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
-                          ))
-                    : Container(color: Colors.grey.withOpacity(0.2)), 
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.all(18),
+          child: Row(children: [
+            const CircleAvatar(radius: 28, child: Icon(Icons.design_services_outlined)),
+            const SizedBox(width: 16),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+              const SizedBox(height: 8),
+              Text(_statusLabel(order['status']?.toString()), style: const TextStyle(color: AppColors.textMuted)),
+              const SizedBox(height: 6),
+              Text('${order['total'] ?? order['quotedPrice'] ?? (order['serviceFee'] ?? 0) + (order['platformFee'] ?? 0)} ر.س', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+            ])),
+            const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.textMuted),
+          ]),
         ),
       ),
     );
   }
+
+  String _statusLabel(String? status) => const {
+    'pending_payment': 'بانتظار الدفع',
+    'confirmed': 'تم تأكيد الطلب',
+    'accepted': 'قبل المصمم الطلب',
+    'in_progress': 'قيد التنفيذ',
+    'ready': 'جاهز',
+    'shipped': 'تم الشحن',
+    'completed': 'مكتمل',
+    'cancelled': 'ملغي',
+    'refunded': 'مسترجع',
+    'submitted': 'تم إرسال الطلب',
+  }[status] ?? status ?? '';
 }

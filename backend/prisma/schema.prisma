@@ -1,0 +1,539 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  customer
+  designer
+  vendor
+  moderator
+  admin
+}
+enum ItemType {
+  product
+  service
+}
+enum ModerationStatus {
+  pending
+  approved
+  rejected
+  hidden
+}
+enum OrderStatus {
+  pending_payment
+  confirmed
+  accepted
+  in_progress
+  ready
+  shipped
+  completed
+  cancelled
+  refunded
+}
+enum PaymentStatus {
+  pending
+  initiated
+  paid
+  failed
+  refunded
+}
+enum PostStatus {
+  published
+  hidden
+  removed
+}
+enum TicketStatus {
+  open
+  in_progress
+  waiting_user
+  resolved
+  closed
+}
+enum TicketPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  firebaseUid   String?  @unique
+  email         String?  @unique
+  phone         String?  @unique
+  passwordHash  String?
+  displayName   String?
+  bio           String?
+  avatarUrl     String?
+  language      String   @default("ar")
+  city          String?
+  role          Role     @default(customer)
+  points        Int      @default(0)
+  disabled      Boolean  @default(false)
+  verified      Boolean  @default(false)
+  profileComplete Boolean @default(false)
+  experienceYears Int?
+  specialties    String[] @default([])
+  preferences   Json?
+  fcmTokens     String[] @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  items         CatalogItem[]
+  orders        Order[]  @relation("CustomerOrders")
+  favorites     Favorite[]
+  reviews       Review[]
+  posts         Post[]
+  comments      Comment[]
+  messages      Message[]
+  refreshTokens RefreshToken[]
+  tickets       Ticket[] @relation("TicketOwner")
+  ticketMessages TicketMessage[]
+  conversations ConversationParticipant[]
+  statusChanges OrderStatusHistory[]
+  payments      Payment[]
+  portfolioItems PortfolioItem[] @relation("DesignerPortfolio")
+  designerReviews DesignerReview[] @relation("DesignerReviewsReceived")
+  writtenDesignerReviews DesignerReview[] @relation("DesignerReviewsWritten")
+  notifications Notification[]
+  following     UserFollow[] @relation("Follower")
+  followers     UserFollow[] @relation("Following")
+  reportsFiled  Report[]
+  designRequests DesignRequest[] @relation("DesignRequestCustomer")
+  assignedDesignRequests DesignRequest[] @relation("DesignRequestDesigner")
+}
+
+model DesignRequest {
+  id                 String   @id @default(uuid()) @db.Uuid
+  customerId         String   @db.Uuid
+  assignedDesignerId String?  @db.Uuid
+  category           String
+  title              String
+  specifications     Json
+  details            String?
+  referenceUrls      String[] @default([])
+  status             String   @default("submitted")
+  serviceFeeHalalas  Int      @default(0)
+  platformFeeHalalas Int      @default(0)
+  quotedHalalas      Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  customer           User     @relation("DesignRequestCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  assignedDesigner   User?    @relation("DesignRequestDesigner", fields: [assignedDesignerId], references: [id], onDelete: SetNull)
+  conversations      Conversation[]
+
+  @@index([customerId, createdAt])
+  @@index([assignedDesignerId, status, createdAt])
+}
+
+model UserFollow {
+  followerId  String   @db.Uuid
+  followingId String   @db.Uuid
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId, createdAt])
+  @@index([followerId, createdAt])
+}
+
+model Report {
+  id         String   @id @default(uuid()) @db.Uuid
+  reporterId String   @db.Uuid
+  targetType String
+  targetId   String   @db.Uuid
+  reason     String
+  details    String?
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, targetType, targetId])
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
+model PortfolioItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  designerId    String   @db.Uuid
+  titleAr       String
+  titleEn       String
+  descriptionAr String?
+  descriptionEn String?
+  images        String[]
+  category      String?
+  completedAt   DateTime?
+  featured      Boolean  @default(false)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  designer      User     @relation("DesignerPortfolio", fields: [designerId], references: [id], onDelete: Cascade)
+  @@index([designerId, active, createdAt])
+}
+
+model DesignerReview {
+  id         String   @id @default(uuid()) @db.Uuid
+  designerId String   @db.Uuid
+  customerId String   @db.Uuid
+  orderId    String?  @unique @db.Uuid
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  designer   User     @relation("DesignerReviewsReceived", fields: [designerId], references: [id], onDelete: Cascade)
+  customer   User     @relation("DesignerReviewsWritten", fields: [customerId], references: [id], onDelete: Cascade)
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  @@index([designerId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  type      String
+  titleAr   String
+  titleEn   String
+  bodyAr    String
+  bodyEn    String
+  data      Json
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt, createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique
+  userId    String   @db.Uuid
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Category {
+  id        String @id @default(uuid()) @db.Uuid
+  slug      String @unique
+  nameAr    String
+  nameEn    String
+  order     Int @default(0)
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  items CatalogItem[]
+}
+
+model CatalogItem {
+  id String @id @default(uuid()) @db.Uuid
+  ownerId String @db.Uuid
+  categoryId String @db.Uuid
+  type ItemType
+  titleAr String
+  titleEn String
+  descriptionAr String
+  descriptionEn String
+  priceHalalas Int
+  currency String @default("SAR")
+  images String[]
+  tags String[] @default([])
+  colors String[] @default([])
+  styles String[] @default([])
+  stock Int?
+  durationDays Int?
+  active Boolean @default(false)
+  moderationStatus ModerationStatus @default(pending)
+  moderationReason String?
+  ratingAverage Float @default(0)
+  ratingCount Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner User @relation(fields: [ownerId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  reviews Review[]
+  orderLines OrderLine[]
+  favorites Favorite[]
+  @@index([active, moderationStatus, createdAt])
+  @@index([categoryId, createdAt])
+  @@index([ownerId])
+}
+
+model Favorite {
+  userId String @db.Uuid
+  itemId String @db.Uuid
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item CatalogItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  @@id([userId, itemId])
+}
+
+model Review {
+  id String @id @default(uuid()) @db.Uuid
+  itemId String @db.Uuid
+  userId String @db.Uuid
+  rating Int
+  comment String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  item CatalogItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([itemId, userId])
+}
+
+model Order {
+  id String @id @default(uuid()) @db.Uuid
+  customerId String @db.Uuid
+  address Json
+  notes String?
+  subtotalHalalas Int
+  discountHalalas Int @default(0)
+  totalHalalas Int
+  currency String @default("SAR")
+  status OrderStatus @default(pending_payment)
+  paymentStatus PaymentStatus @default(pending)
+  cancellationReason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  customer User @relation("CustomerOrders", fields: [customerId], references: [id])
+  lines OrderLine[]
+  history OrderStatusHistory[]
+  payments Payment[]
+  conversations Conversation[]
+  tickets Ticket[]
+  designerReview DesignerReview?
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderLine {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  itemId String @db.Uuid
+  ownerId String @db.Uuid
+  quantity Int
+  titleAr String
+  titleEn String
+  unitPriceHalalas Int
+  totalHalalas Int
+  selectedOptions Json?
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item CatalogItem @relation(fields: [itemId], references: [id])
+  @@index([ownerId])
+}
+
+model OrderStatusHistory {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  actorId String @db.Uuid
+  status OrderStatus
+  previousStatus OrderStatus?
+  note String?
+  createdAt DateTime @default(now())
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actor User @relation(fields: [actorId], references: [id])
+}
+
+model Payment {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  userId String @db.Uuid
+  amountHalalas Int
+  currency String @default("SAR")
+  provider String
+  providerReference String?
+  status PaymentStatus @default(initiated)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order Order @relation(fields: [orderId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id String @id @default(uuid()) @db.Uuid
+  authorId String @db.Uuid
+  caption String
+  media Json
+  tags String[] @default([])
+  status PostStatus @default(published)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author User @relation(fields: [authorId], references: [id])
+  likes PostLike[]
+  comments Comment[]
+  @@index([status, createdAt])
+}
+
+model PostLike {
+  postId String @db.Uuid
+  userId String @db.Uuid
+  createdAt DateTime @default(now())
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@id([postId, userId])
+}
+
+model Comment {
+  id String @id @default(uuid()) @db.Uuid
+  postId String @db.Uuid
+  authorId String @db.Uuid
+  text String
+  status PostStatus @default(published)
+  createdAt DateTime @default(now())
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+}
+
+model Conversation {
+  id String @id @default(uuid()) @db.Uuid
+  key String @unique
+  orderId String? @db.Uuid
+  designRequestId String? @db.Uuid
+  lastMessage String?
+  lastSenderId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order Order? @relation(fields: [orderId], references: [id])
+  designRequest DesignRequest? @relation(fields: [designRequestId], references: [id])
+  participants ConversationParticipant[]
+  messages Message[]
+
+  @@index([designRequestId])
+}
+
+model ConversationParticipant {
+  conversationId String @db.Uuid
+  userId String @db.Uuid
+  joinedAt DateTime @default(now())
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id String @id @default(uuid()) @db.Uuid
+  conversationId String @db.Uuid
+  senderId String @db.Uuid
+  text String?
+  mediaUrl String?
+  mediaType String?
+  readBy String[] @default([])
+  createdAt DateTime @default(now())
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id])
+  @@index([conversationId, createdAt])
+}
+
+model Ticket {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  orderId String? @db.Uuid
+  subject String
+  category String
+  status TicketStatus @default(open)
+  priority TicketPriority @default(normal)
+  assignedTo String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation("TicketOwner", fields: [userId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+  messages TicketMessage[]
+  @@index([userId, updatedAt])
+}
+
+model TicketMessage {
+  id String @id @default(uuid()) @db.Uuid
+  ticketId String @db.Uuid
+  senderId String @db.Uuid
+  text String
+  internal Boolean @default(false)
+  createdAt DateTime @default(now())
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id])
+}
+
+model Page {
+  slug String @id
+  titleAr String
+  titleEn String
+  contentAr String
+  contentEn String
+  published Boolean @default(false)
+  updatedBy String? @db.Uuid
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationCampaign {
+  id String @id @default(uuid()) @db.Uuid
+  title String
+  body String
+  topic String
+  data Json
+  messageId String?
+  status String
+  scheduledAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model ActivityEvent {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  event String
+  targetType String?
+  targetId String?
+  metadata Json?
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
+}
+
+model AiJob {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  type String
+  domain String
+  imageUrls String[]
+  answers Json
+  status String @default("queued")
+  result Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Trend {
+  id String @id @default(uuid()) @db.Uuid
+  titleAr String
+  titleEn String
+  imageUrl String?
+  active Boolean @default(true)
+  startsAt DateTime
+  endsAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Challenge {
+  id String @id @default(uuid()) @db.Uuid
+  titleAr String
+  titleEn String
+  descriptionAr String?
+  descriptionEn String?
+  active Boolean @default(true)
+  startsAt DateTime
+  endsAt DateTime
+  createdAt DateTime @default(now())
+  entries ChallengeEntry[]
+}
+
+model ChallengeEntry {
+  challengeId String @db.Uuid
+  userId String @db.Uuid
+  postId String @db.Uuid
+  status String @default("submitted")
+  createdAt DateTime @default(now())
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  @@id([challengeId, userId])
+}

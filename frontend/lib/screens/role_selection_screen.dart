@@ -30,10 +30,16 @@ class RoleSelectionScreen extends StatelessWidget {
             Container(color: Colors.white.withOpacity(0.45)),
 
             SafeArea(
-              child: Column(
-                children: [
-                  const _TopBar(),
-                  const Spacer(flex: 2),
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          const _TopBar(),
+                          const Spacer(flex: 2),
 
                   // Logo
                   Image.asset(
@@ -50,9 +56,13 @@ class RoleSelectionScreen extends StatelessWidget {
                   _RoleCards(),
 
                   const Spacer(flex: 2),
-                  const _Footer(),
-                  const SizedBox(height: 12),
-                ],
+                          const _Footer(),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

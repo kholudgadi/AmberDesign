@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+service-account*.json
+.firebase/
+firebase-debug.log
+coverage/
+prisma/*.db

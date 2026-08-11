@@ -1,0 +1,73 @@
+import { createHash, randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
+import { Router } from "express";
+import jwt, { type SignOptions } from "jsonwebtoken";
+import { z } from "zod";
+import { env } from "../config.js";
+import { prisma } from "../database.js";
+import { authenticate } from "../middleware/auth.js";
+import type { AuthRequest, Role } from "../types.js";
+import { ApiError, asyncHandler, parse } from "../utils.js";
+
+export const authRouter = Router();
+const publicUser = (user: { id: string; email: string | null; phone: string | null; displayName: string | null; role: Role; language: string; verified: boolean }) => user;
+const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
+
+async function issueTokens(user: { id: string; role: Role }) {
+  const accessToken = jwt.sign({ role: user.role }, env.JWT_ACCESS_SECRET, {
+    subject: user.id,
+    expiresIn: env.JWT_ACCESS_TTL as SignOptions["expiresIn"]
+  });
+  const refreshToken = randomBytes(48).toString("base64url");
+  const expiresAt = new Date(Date.now() + env.JWT_REFRESH_DAYS * 86_400_000);
+  await prisma.refreshToken.create({ data: { userId: user.id, tokenHash: hashToken(refreshToken), expiresAt } });
+  return { accessToken, refreshToken, expiresAt };
+}
+
+authRouter.post("/register", asyncHandler(async (req, res) => {
+  const input = parse(z.object({
+    email: z.string().email(), password: z.string().min(8).max(128),
+    displayName: z.string().min(2).max(80), role: z.enum(["customer", "designer", "vendor"]).default("customer"),
+    language: z.enum(["ar", "en"]).default("ar"), phone: z.string().min(7).max(20).optional()
+  }), req.body);
+  const email = input.email.toLowerCase();
+  if (await prisma.user.findUnique({ where: { email } })) throw new ApiError(409, "Email already registered", "EMAIL_EXISTS");
+  if (input.phone && await prisma.user.findUnique({ where: { phone: input.phone } })) throw new ApiError(409, "Phone already registered", "PHONE_EXISTS");
+  const user = await prisma.user.create({ data: { email, phone: input.phone, passwordHash: await bcrypt.hash(input.password, 12), displayName: input.displayName, role: input.role, language: input.language } });
+  res.status(201).json({ data: { user: publicUser(user), ...(await issueTokens(user)) } });
+}));
+
+authRouter.post("/login", asyncHandler(async (req, res) => {
+  const input = parse(z.object({ email: z.string().email(), password: z.string().min(1).max(128) }), req.body);
+  const user = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
+  if (!user?.passwordHash || !(await bcrypt.compare(input.password, user.passwordHash))) throw new ApiError(401, "Invalid credentials", "INVALID_CREDENTIALS");
+  if (user.disabled) throw new ApiError(403, "Account is disabled", "ACCOUNT_DISABLED");
+  res.json({ data: { user: publicUser(user), ...(await issueTokens(user)) } });
+}));
+
+authRouter.post("/refresh", asyncHandler(async (req, res) => {
+  const { refreshToken } = parse(z.object({ refreshToken: z.string().min(40) }), req.body);
+  const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashToken(refreshToken) }, include: { user: true } });
+  if (!stored || stored.revokedAt || stored.expiresAt <= new Date() || stored.user.disabled) throw new ApiError(401, "Invalid refresh token", "INVALID_REFRESH_TOKEN");
+  const tokens = await prisma.$transaction(async tx => {
+    await tx.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } });
+    const accessToken = jwt.sign({ role: stored.user.role }, env.JWT_ACCESS_SECRET, { subject: stored.user.id, expiresIn: env.JWT_ACCESS_TTL as SignOptions["expiresIn"] });
+    const newRefreshToken = randomBytes(48).toString("base64url");
+    const expiresAt = new Date(Date.now() + env.JWT_REFRESH_DAYS * 86_400_000);
+    await tx.refreshToken.create({ data: { userId: stored.user.id, tokenHash: hashToken(newRefreshToken), expiresAt } });
+    return { accessToken, refreshToken: newRefreshToken, expiresAt };
+  });
+  res.json({ data: tokens });
+}));
+
+authRouter.post("/logout", authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const input = parse(z.object({ refreshToken: z.string().min(40) }), req.body);
+  await prisma.refreshToken.updateMany({ where: { userId: req.user!.uid, tokenHash: hashToken(input.refreshToken), revokedAt: null }, data: { revokedAt: new Date() } });
+  res.status(204).send();
+}));
+
+authRouter.get("/me", authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.uid } });
+  const { passwordHash: _, ...safe } = user;
+  res.json({ data: safe });
+}));

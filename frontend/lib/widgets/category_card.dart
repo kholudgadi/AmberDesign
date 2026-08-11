@@ -5,14 +5,18 @@ import '../utils/app_colors.dart';
 class CategoryCard extends StatelessWidget {
   final String title;
   final String image;
+  final VoidCallback? onTap;
 
-  const CategoryCard({super.key, required this.title, required this.image});
+  const CategoryCard({super.key, required this.title, required this.image, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 12),
-      child: Column(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
         children: [
           Container(
             width: 80,
@@ -35,6 +39,7 @@ class CategoryCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ class DesignerCard extends StatelessWidget {
   final String category;
   final String coverImage;
   final String avatarImage;
+  final VoidCallback? onTap;
 
   const DesignerCard({
     super.key,
@@ -15,12 +16,16 @@ class DesignerCard extends StatelessWidget {
     required this.category,
     required this.coverImage,
     required this.avatarImage,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     // The gradient preserves text contrast over the designer's cover image.
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       height: 180,
       decoration: BoxDecoration(
@@ -111,6 +116,7 @@ class DesignerCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
