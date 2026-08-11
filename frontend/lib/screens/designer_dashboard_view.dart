@@ -34,13 +34,6 @@ class DesignerDashboardView extends StatelessWidget {
             onPressed: () {}, 
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: AppColors.textMuted.withOpacity(0.15), 
-            height: 1.0, 
-          ),
-        ),
       ),
       body: DesignerAppBackground(
         child: SafeArea(
@@ -101,7 +94,6 @@ class DesignerDashboardView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // 2. كارد التقييم
                 GestureDetector(
                   onTap: () {},
                   child: DesignerGlassCard( 

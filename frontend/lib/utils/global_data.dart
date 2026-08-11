@@ -99,4 +99,51 @@ class GlobalData {
       'color': 0xFFFFB300,
     },
   ];
+
+  static List<Map<String, dynamic>> designerManagementOrders = [
+    {
+      'id': '#101',
+      'title': 'فستان سهرة احترافي',
+      'clientName': 'منى القحطاني',
+      'price': '٤٠٠٠ ر.س',
+      'status': 'قيد التنفيذ',
+      'image': 'https://images.unsplash.com/photo-1733731402869-57e0cce24aea?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzN8fGRyZXNzZXN8ZW58MHx8MHx8fDA%3D',
+      'clientAvatar': 'https://randomuser.me/api/portraits/women/44.jpg',
+      'date': '٥ يوليو ٢٠٢٥',
+      'currentStep': 3, 
+    },
+    {
+      'id': '#102',
+      'title': 'فستان حفل عصري',
+      'clientName': 'لمياء العتيبي',
+      'price': '٢٥٠٠ ر.س',
+      'status': 'بانتظار رد العميل',
+      'image': 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=200',
+      'clientAvatar': 'https://randomuser.me/api/portraits/women/68.jpg',
+      'date': '٤ يوليو ٢٠٢٥',
+      'currentStep': 1,
+    },
+    {
+      'id': '#103',
+      'title': 'فستان زفاف مميز',
+      'clientName': 'سارة الحربي',
+      'price': '١٠٠٠٠ ر.س',
+      'status': 'مكتمل',
+      'image': 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=200',
+      'clientAvatar': 'https://randomuser.me/api/portraits/women/12.jpg',
+      'date': '١ يوليو ٢٠٢٥',
+      'currentStep': 4,
+    },
+    {
+      'id': '#104',
+      'title': 'تصميم فستان سهرة',
+      'clientName': 'نورة السالم',
+      'price': '٣٥٠٠ ر.س',
+      'status': 'قيد الانتظار', 
+      'image': 'https://images.unsplash.com/photo-1623609163841-5e69d8c62cc7?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTd8fGRyZXNzZXN8ZW58MHx8MHx8fDA%3D',
+      'clientAvatar': 'https://randomuser.me/api/portraits/women/90.jpg',
+      'date': '٢٠ يونيو ٢٠٢٥',
+      'currentStep': 0,
+    },
+  ];
 }
