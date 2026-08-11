@@ -31,9 +31,13 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
 
   Future<void> _chat(Map<String, dynamic> order) async {
     final lines = order['lines'] as List<dynamic>? ?? const [];
-    final ownerId = widget.kind == 'design_request'
-        ? (order['assignedDesigner'] as Map<String, dynamic>?)?['id']?.toString()
-        : (lines.isEmpty ? null : (lines.first as Map<String, dynamic>)['ownerId']?.toString());
+    final assignedDesigner = order['assignedDesigner'] as Map<String, dynamic>?;
+    String? ownerId;
+    if (widget.kind == 'design_request') {
+      ownerId = assignedDesigner?['id']?.toString();
+    } else if (lines.isNotEmpty) {
+      ownerId = (lines.first as Map<String, dynamic>)['ownerId']?.toString();
+    }
     if (ownerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لا يوجد مصمم مرتبط بهذا الطلب')));
       return;
