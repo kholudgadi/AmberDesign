@@ -82,7 +82,7 @@ class _DesignerManagementViewState extends State<DesignerManagementView> {
                             decoration: BoxDecoration(
                               color: isSelected 
                                   ? AppColors.textDark.withOpacity(0.9) 
-                                  : const Color.fromARGB(255, 200, 200, 200).withOpacity(0.28),
+                                  : const Color.fromARGB(255, 200, 200, 200).withOpacity(0.35),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Center(
