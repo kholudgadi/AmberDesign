@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/designer_bottom_nav_bar.dart';
 import 'designer_dashboard_view.dart';
 import 'designer_management_view.dart';
-import 'designer_requests_screen.dart';
+import 'designer_requests_view.dart';
 
 class DesignerHomeScreen extends StatefulWidget {
   const DesignerHomeScreen({super.key});
@@ -18,10 +18,10 @@ class _DesignerHomeScreenState extends State<DesignerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = <Widget>[
+    final List<Widget> pages = [
       DesignerDashboardView(onTabChange: _changeTab),
       const Center(child: Text('منتجاتي')),
-      const DesignerRequestsScreen(),
+      DesignerRequestsView(onBack: () => _changeTab(0)),
       DesignerManagementView(onBack: () => _changeTab(0)),
       const Center(child: Text('الملف الشخصي')),
     ];
