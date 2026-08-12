@@ -246,4 +246,14 @@ class GlobalData {
       'color': 0xFFFFB300,
     },
   ];
+  static void addNotification(String title, String sub, IconData icon, int color) {
+    myNotifications.insert(0, {
+      'title': title,
+      'sub': sub,
+      'time': 'الآن',
+      'icon': icon.codePoint,
+      'iconColor': color,
+      'isRead': false,
+    });
+  }
 }

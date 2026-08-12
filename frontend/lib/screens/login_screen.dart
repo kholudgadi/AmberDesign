@@ -34,23 +34,61 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل البريد الإلكتروني وكلمة المرور')));
       return;
     }
+    
     setState(() => _isLoading = true);
+    
     try {
       final user = await AuthService.instance.login(_emailController.text, _passwordController.text);
       if (!mounted) return;
+      
       final expectedRole = widget.isDesigner ? 'designer' : 'customer';
       if (user['role'] != expectedRole) {
         await AuthService.instance.clearSession();
         throw ApiException(widget.isDesigner ? 'هذا الحساب ليس حساب مصمم' : 'استخدم بوابة دخول المصممين لهذا الحساب', 403);
       }
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => widget.isDesigner
-              ? const DesignerHomeScreen()
-              : const HomeScreen(),
-        ),
-        (_) => false,
-      );
+
+      if (user['role'] == 'designer') {
+        final String? domain = user['domain']?.toString().toLowerCase();
+
+        if (domain == 'fashion' || domain == 'أزياء' || domain == null || domain.isEmpty) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const DesignerHomeScreen()),
+            (_) => false,
+          );
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => Scaffold(
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+                    onPressed: () {
+                      AuthService.instance.clearSession();
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen(isDesigner: true)));
+                    },
+                  ),
+                ),
+                body: const Center(
+                  child: Text(
+                    'واجهة المصمم الداخلي/الخارجي\n(قريباً)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                  ),
+                ),
+              ),
+            ),
+            (_) => false,
+          );
+        }
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (_) => false,
+        );
+      }
+      
     } on ApiException catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
@@ -71,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
             SafeArea(
               child: Column(
                 children: [
-                  const CustomTopBar(), // calling the top bar
+                  const CustomTopBar(), 
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -109,7 +147,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 40),
 
-                          // calling the email field
                           CustomTextField(
                             label: 'البريد الإلكتروني',
                             hint: 'example@mail.com',
@@ -118,7 +155,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // calling the password field
                           CustomTextField(
                             label: 'كلمة المرور',
                             hint: '••••••••',

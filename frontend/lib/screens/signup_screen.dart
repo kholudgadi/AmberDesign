@@ -6,8 +6,7 @@ import '../widgets/app_background.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
-import 'designer_domain_screen.dart';
-
+import 'designer_home_screen.dart';
 class SignupScreen extends StatefulWidget {
   final bool isDesigner;
 
@@ -63,24 +62,30 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _register() async {
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمتا المرور غير متطابقتين')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('كلمتا المرور غير متطابقتين')),
+      );
       return;
     }
     if (_passwordController.text.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة المرور يجب ألا تقل عن 8 أحرف')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('كلمة المرور يجب ألا تقل عن 8 أحرف')),
+      );
       return;
     }
     setState(() => _isLoading = true);
     try {
       await AuthService.instance.register(
-        email: _emailController.text, password: _passwordController.text,
-        displayName: _nameController.text, phone: _phoneController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        displayName: _nameController.text,
+        phone: _phoneController.text,
         isDesigner: widget.isDesigner,
       );
       if (!mounted) return;
       if (widget.isDesigner) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DesignerDomainScreen()),
+          MaterialPageRoute(builder: (_) => const DesignerHomeScreen()),
         );
       } else {
         Navigator.of(context).pushAndRemoveUntil(
@@ -89,7 +94,11 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       }
     } on ApiException catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -211,7 +220,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         // The "Next" button is enabled only when all fields are filled
                         ElevatedButton(
                           // The onPressed callback is set to null when the form is not valid, which disables the button. When the form is valid, it prints a debug message.
-                          onPressed: _isFormValid && !_isLoading ? _register : null,
+                          onPressed: _isFormValid && !_isLoading
+                              ? _register
+                              : null,
                           style: ElevatedButton.styleFrom(
                             // The background color changes based on the form's validity. If the form is valid, it uses a darker color; if not, it uses a muted color with opacity.
                             backgroundColor: _isFormValid
@@ -228,12 +239,22 @@ class _SignupScreenState extends State<SignupScreen> {
                                 : 0, // Elevation is set to 0 when the button is disabled to give a flat appearance
                           ),
                           child: _isLoading
-                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Text('إنشاء الحساب', style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            )),
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'إنشاء الحساب',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
 
                         const SizedBox(height: 40),

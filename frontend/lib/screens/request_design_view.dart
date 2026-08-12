@@ -412,45 +412,53 @@ class _RequestDesignViewState extends State<RequestDesignView> {
               'title': 'نوع التصميم',
               'value': 'تصميم أزياء',
             });
-            if (selectedDressType != null)
+            if (selectedDressType != null) {
               collectedDetails.add({
                 'title': 'نوع الطلب',
                 'value': selectedDressType!,
               });
-            if (selectedSize != null)
+            }
+            if (selectedSize != null) {
               collectedDetails.add({'title': 'المقاس', 'value': selectedSize!});
-            if (selectedColor != null)
+            }
+            if (selectedColor != null) {
               collectedDetails.add({'title': 'اللون', 'value': selectedColor!});
-            if (selectedFabric != null)
+            }
+            if (selectedFabric != null) {
               collectedDetails.add({
                 'title': 'القماش',
                 'value': selectedFabric!,
               });
-            if (selectedLength != null)
+            }
+            if (selectedLength != null) {
               collectedDetails.add({
                 'title': 'الطول',
                 'value': selectedLength!,
               });
+            }
           } else if (isFashion == false) {
             collectedDetails.add({
               'title': 'نوع التصميم',
               'value': 'تصميم داخلي (ديكور)',
             });
-            if (selectedProjectType != null)
+            if (selectedProjectType != null) {
               collectedDetails.add({
                 'title': 'نوع المشروع',
                 'value': selectedProjectType!,
               });
-            if (selectedStyle != null)
+            }
+            if (selectedStyle != null) {
               collectedDetails.add({
                 'title': 'الأسلوب',
                 'value': selectedStyle!,
               });
-            if (selectedArea != null)
+            }
+            if (selectedArea != null) {
               collectedDetails.add({
                 'title': 'المساحة',
                 'value': selectedArea!,
               });
+            }
           }
 
           Navigator.push(
@@ -458,7 +466,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
             MaterialPageRoute(
               builder: (context) => OrderReviewScreen(
                 orderDetails: collectedDetails,
-                serviceFee: 0.0, // الرسوم صفر بانتظار تسعير المصممة
+                serviceFee: 0.0, 
                 platformFee: 0.0,
               ),
             ),
