@@ -53,7 +53,10 @@ ordersRouter.get("/design-requests", asyncHandler(async (req: AuthRequest, res) 
       : {};
   const rows = await prisma.designRequest.findMany({
     where,
-    include: { assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } } },
+    include: {
+      assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } },
+      customer: { select: { id: true, displayName: true, avatarUrl: true, city: true } }
+    },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     take: limit + 1
@@ -105,7 +108,10 @@ ordersRouter.post("/design-requests/:id/claim", allow("designer"), asyncHandler(
 ordersRouter.get("/design-requests/:id", asyncHandler(async (req: AuthRequest, res) => {
   const request = await prisma.designRequest.findUnique({
     where: { id: req.params.id },
-    include: { assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } } }
+    include: {
+      assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } },
+      customer: { select: { id: true, displayName: true, avatarUrl: true, city: true } }
+    }
   });
   if (!request) throw new ApiError(404, "Design request not found", "NOT_FOUND");
   if (![request.customerId, request.assignedDesignerId].includes(req.user!.uid) && !["admin", "moderator"].includes(req.user!.role)) {

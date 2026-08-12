@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/chat_service.dart';
 import '../services/orders_service.dart';
+import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/glass_card.dart';
@@ -34,9 +35,15 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   Future<void> _chat(Map<String, dynamic> order) async {
     final lines = order['lines'] as List<dynamic>? ?? const [];
     final assignedDesigner = order['assignedDesigner'] as Map<String, dynamic>?;
+    final customer = order['customer'] as Map<String, dynamic>?;
     String? ownerId;
     if (widget.kind == 'design_request') {
-      ownerId = assignedDesigner?['id']?.toString();
+      final currentUser = await AuthService.instance.currentUser();
+      if (currentUser['role'] == 'designer') {
+        ownerId = customer?['id']?.toString();
+      } else {
+        ownerId = assignedDesigner?['id']?.toString();
+      }
     } else if (lines.isNotEmpty) {
       ownerId = (lines.first as Map<String, dynamic>)['ownerId']?.toString();
     }
@@ -46,6 +53,10 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
     }
     setState(() => _openingChat = true);
     try {
+      String participantName = assignedDesigner?['displayName']?.toString() ?? 'المصمم';
+      if (widget.kind == 'design_request' && customer?['id']?.toString() == ownerId) {
+        participantName = customer?['displayName']?.toString() ?? 'العميل';
+      }
       final conversationId = await ChatService.instance.openConversation(
         participantId: ownerId,
         orderId: widget.kind == 'order' ? widget.orderId : null,
@@ -54,7 +65,10 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(
         conversationId: conversationId,
-        participant: {'id': ownerId, 'displayName': assignedDesigner?['displayName']?.toString() ?? 'المصمم'},
+        participant: {
+          'id': ownerId,
+          'displayName': participantName,
+        },
       )));
     } on ApiException catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
