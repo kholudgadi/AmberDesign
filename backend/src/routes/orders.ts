@@ -102,7 +102,7 @@ ordersRouter.post("/design-requests/:id/claim", allow("designer"), asyncHandler(
       data: { designRequestId: request.id, designerId: req.user!.uid, conversationId: conversation.id }
     } });
     return { request, conversationId: conversation.id };
-  });
+  }, { maxWait: 10_000, timeout: 20_000 });
   getIo().to(`user:${result.request.customerId}`).emit("design-request:assigned", result);
   res.json({ data: { ...presentDesignRequest(result.request), conversationId: result.conversationId } });
 }));
