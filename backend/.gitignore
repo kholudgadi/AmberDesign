@@ -4,5 +4,6 @@ dist/
 service-account*.json
 .firebase/
 firebase-debug.log
+*.log
 coverage/
 prisma/*.db
