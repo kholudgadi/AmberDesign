@@ -15,6 +15,11 @@ const itemSchema = z.object({
 });
 const presentItem = <T extends { priceHalalas: number }>(item: T) => ({ ...item, price: item.priceHalalas / 100, priceHalalas: undefined });
 
+catalogRouter.get("/me/items", authenticate, allow("designer", "vendor", "admin"), asyncHandler(async (req: AuthRequest, res) => {
+  const items = await prisma.catalogItem.findMany({ where: { ownerId: req.user!.uid }, orderBy: { createdAt: "desc" } });
+  res.json({ data: items.map(presentItem) });
+}));
+
 catalogRouter.get("/items", asyncHandler(async (req, res) => {
   const limit = pageSize(req.query.limit);
   const cursor = pageCursor(req.query.cursor);

@@ -21,6 +21,9 @@ class ApiClient {
   Future<Map<String, dynamic>> get(String path, {String? token}) =>
       _send('GET', path, token: token);
 
+  Future<Map<String, dynamic>> patch(String path, Map<String, dynamic> body, {String? token}) =>
+      _send('PATCH', path, body: body, token: token);
+
   Future<Map<String, dynamic>> _send(String method, String path, {Map<String, dynamic>? body, String? token}) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}$path');
     try {
