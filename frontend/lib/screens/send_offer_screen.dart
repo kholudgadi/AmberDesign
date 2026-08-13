@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import '../utils/global_data.dart';
 import '../widgets/designer_app_background.dart';
 import '../widgets/designer_glass_card.dart';
 
@@ -90,13 +89,12 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
 
                   ElevatedButton(
                     onPressed: _isButtonEnabled ? () {
-                      GlobalData.addNotification(
-                        'عرض جديد من ${GlobalData.designerProfile['name']}', 
-                        'تم إرسال عرض لطلب ${widget.request['title']}', 
-                        Icons.local_offer_outlined, 
-                        0xFF6A5AE0
+                      // 💡 التعديل هنا: استبدلنا GlobalData بـ SnackBar 
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('تم إرسال العرض بنجاح!')),
                       );
-                      Navigator.pop(context); 
+                      Navigator.pop(context); // إغلاق صفحة إرسال العرض
+                      Navigator.pop(context); // العودة لصفحة الطلبات الرئيسية
                     } : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isButtonEnabled 
@@ -130,7 +128,8 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.request['title'],
+                  // 💡 تفادي الخطأ لو كان العنوان غير موجود
+                  widget.request['title'] ?? 'طلب تصميم',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -139,7 +138,7 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${widget.request['clientName']} · ${widget.request['city']}', 
+                  '${widget.request['clientName'] ?? 'عميل'} · ${widget.request['city'] ?? ''}', 
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textMuted,
@@ -151,7 +150,10 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
           const SizedBox(width: 16),
           ClipOval(
             child: Image.network(
-              widget.request['images'][0],
+              // 💡 تفادي الخطأ لو كانت الصورة غير موجودة
+              (widget.request['images'] != null && widget.request['images'].isNotEmpty) 
+                  ? widget.request['images'][0] 
+                  : 'https://via.placeholder.com/150',
               width: 70,
               height: 70,
               fit: BoxFit.cover,
