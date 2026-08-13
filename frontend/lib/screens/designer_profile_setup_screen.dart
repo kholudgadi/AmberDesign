@@ -3,8 +3,7 @@ import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/glass_card.dart';
 import '../screens/designer_home_screen.dart';
-import '../services/designer_service.dart';
-import '../services/api_client.dart';
+import '../utils/global_data.dart'; 
 
 class DesignerProfileSetupScreen extends StatefulWidget {
   final String
@@ -280,23 +279,18 @@ class _DesignerProfileSetupScreenState
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _isFormValid
-                          ? () async {
-                              final experienceIndex = experienceOptions.indexOf(_selectedExperience!);
-                              final experience = switch (experienceIndex) { 0 => 1, 1 => 3, 2 => 7, _ => 11 };
-                              try {
-                                await DesignerService.instance.updateAccount(city: _cityController.text.trim(), bio: _bioController.text.trim());
-                                await DesignerService.instance.updateProfessionalProfile(experienceYears: experience, specialties: [widget.domainName]);
-                                if (!context.mounted) return;
-                                Navigator.pushAndRemoveUntil(
+                          ? () {
+                              GlobalData.designerProfile['city'] = _cityController.text.trim();
+                              GlobalData.designerProfile['bio'] = _bioController.text.trim();
+                              GlobalData.designerProfile['role'] = _getJobTitle();
+
+                              Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => const DesignerHomeScreen(),
                                 ),
                                 (route) => false,
                               );
-                              } on ApiException catch (error) {
-                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
-                              }
                             }
                           : null,
                       style: ElevatedButton.styleFrom(

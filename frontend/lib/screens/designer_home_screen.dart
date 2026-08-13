@@ -3,8 +3,6 @@ import '../widgets/designer_bottom_nav_bar.dart';
 import 'designer_dashboard_view.dart';
 import 'designer_management_view.dart';
 import 'designer_requests_view.dart';
-import 'designer_products_view.dart';
-import 'designer_account_view.dart';
 
 class DesignerHomeScreen extends StatefulWidget {
   const DesignerHomeScreen({super.key});
@@ -22,10 +20,10 @@ class _DesignerHomeScreenState extends State<DesignerHomeScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       DesignerDashboardView(onTabChange: _changeTab),
-      const DesignerProductsView(),
+      const Center(child: Text('منتجاتي')),
       DesignerRequestsView(onBack: () => _changeTab(0)),
       DesignerManagementView(onBack: () => _changeTab(0)),
-      const DesignerAccountView(),
+      const Center(child: Text('الملف الشخصي')),
     ];
 
     return Directionality(
