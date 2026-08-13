@@ -20,6 +20,31 @@ adminRouter.get("/users", asyncHandler(async (req, res) => {
   const users = await prisma.user.findMany({ where: { role }, select: { id: true, displayName: true, email: true, phone: true, role: true, verified: true, disabled: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: pageSize(req.query.limit) });
   res.json({ data: users });
 }));
+adminRouter.get("/catalog", asyncHandler(async (req, res) => {
+  const status = typeof req.query.status === "string" ? req.query.status : undefined;
+  const items = await prisma.catalogItem.findMany({
+    where: status ? { moderationStatus: status } : {},
+    include: { owner: { select: { id: true, displayName: true, email: true } }, category: { select: { id: true, nameAr: true } } },
+    orderBy: { createdAt: "desc" },
+    take: pageSize(req.query.limit, 100)
+  });
+  res.json({ data: items.map(item => ({ ...item, price: item.priceHalalas / 100 })) });
+}));
+adminRouter.get("/reports", asyncHandler(async (req, res) => {
+  const status = typeof req.query.status === "string" ? req.query.status : undefined;
+  const reports = await prisma.report.findMany({
+    where: status ? { status } : {},
+    include: { reporter: { select: { id: true, displayName: true, email: true } } },
+    orderBy: { createdAt: "desc" },
+    take: pageSize(req.query.limit, 100)
+  });
+  res.json({ data: reports });
+}));
+adminRouter.patch("/reports/:id", asyncHandler(async (req, res) => {
+  const input = parse(z.object({ status: z.enum(["open", "reviewing", "resolved", "dismissed"]) }).strict(), req.body);
+  const report = await prisma.report.update({ where: { id: req.params.id }, data: { status: input.status } });
+  res.json({ data: report });
+}));
 adminRouter.patch("/users/:id", allow("admin"), asyncHandler(async (req: AuthRequest, res) => {
   const input = parse(z.object({ role: z.enum(roles).optional(), disabled: z.boolean().optional(), verified: z.boolean().optional() }), req.body);
   if (req.params.id === req.user!.uid && input.disabled) throw new ApiError(422, "Cannot disable your own account", "INVALID_OPERATION");

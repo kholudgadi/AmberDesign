@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import { allow, authenticate } from "../middleware/auth.js";
 import { getIo } from "../socket.js";
+import { sendPushSafely } from "../services/notifications.js";
 import type { AuthRequest, OrderStatus } from "../types.js";
 import { orderStatuses } from "../types.js";
 import { ApiError, asyncHandler, pageCursor, pageSize, paginated, parse } from "../utils.js";
@@ -104,6 +105,11 @@ ordersRouter.post("/design-requests/:id/claim", allow("designer"), asyncHandler(
     return { request, conversationId: conversation.id };
   }, { maxWait: 10_000, timeout: 20_000 });
   getIo().to(`user:${result.request.customerId}`).emit("design-request:assigned", result);
+  sendPushSafely(result.request.customerId, {
+    titleAr: "تم تعيين مصمم لطلبك", titleEn: "A designer was assigned",
+    bodyAr: "يمكنك الآن التواصل مع المصمم عبر المحادثة", bodyEn: "You can now chat with your designer",
+    data: { designRequestId: result.request.id, conversationId: result.conversationId }
+  });
   res.json({ data: { ...presentDesignRequest(result.request), conversationId: result.conversationId } });
 }));
 
@@ -187,6 +193,11 @@ ordersRouter.patch("/:id/status", allow("designer", "vendor", "moderator", "admi
   });
   getIo().to(`user:${changed.customerId}`).emit("order:status", changed);
   getIo().to(`order:${changed.orderId}`).emit("order:status", changed);
+  sendPushSafely(changed.customerId, {
+    titleAr: "تحديث حالة الطلب", titleEn: "Order status updated",
+    bodyAr: `تم تحديث حالة طلبك إلى ${changed.status}`, bodyEn: `Your order status is now ${changed.status}`,
+    data: { orderId: changed.orderId, status: changed.status }
+  });
   res.json({ data: { success: true, status: input.status } });
 }));
 

@@ -21,6 +21,21 @@ usersRouter.patch("/me", asyncHandler(async (req: AuthRequest, res) => {
   res.json({ data: safe });
 }));
 
+usersRouter.post("/me/fcm-tokens", asyncHandler(async (req: AuthRequest, res) => {
+  const { token } = parse(z.object({ token: z.string().min(20).max(4096) }).strict(), req.body);
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.uid }, select: { fcmTokens: true } });
+  const fcmTokens = [token, ...user.fcmTokens.filter(value => value !== token)].slice(0, 10);
+  await prisma.user.update({ where: { id: req.user!.uid }, data: { fcmTokens } });
+  res.status(201).json({ data: { registered: true } });
+}));
+
+usersRouter.delete("/me/fcm-tokens", asyncHandler(async (req: AuthRequest, res) => {
+  const { token } = parse(z.object({ token: z.string().min(20).max(4096) }).strict(), req.body);
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.uid }, select: { fcmTokens: true } });
+  await prisma.user.update({ where: { id: req.user!.uid }, data: { fcmTokens: user.fcmTokens.filter(value => value !== token) } });
+  res.status(204).send();
+}));
+
 usersRouter.get("/me/favorites", asyncHandler(async (req: AuthRequest, res) => {
   const favorites = await prisma.favorite.findMany({ where: { userId: req.user!.uid }, include: { item: true }, orderBy: { createdAt: "desc" } });
   res.json({ data: favorites.map(f => ({ ...f.item, price: f.item.priceHalalas / 100, favoritedAt: f.createdAt })) });

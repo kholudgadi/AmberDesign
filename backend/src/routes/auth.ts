@@ -5,6 +5,7 @@ import jwt, { type SignOptions } from "jsonwebtoken";
 import { z } from "zod";
 import { env } from "../config.js";
 import { prisma } from "../database.js";
+import { firebaseAuth } from "../firebase.js";
 import { authenticate } from "../middleware/auth.js";
 import type { AuthRequest, Role } from "../types.js";
 import { ApiError, asyncHandler, parse } from "../utils.js";
@@ -28,13 +29,39 @@ authRouter.post("/register", asyncHandler(async (req, res) => {
   const input = parse(z.object({
     email: z.string().email(), password: z.string().min(8).max(128),
     displayName: z.string().min(2).max(80), role: z.enum(["customer", "designer", "vendor"]).default("customer"),
-    language: z.enum(["ar", "en"]).default("ar"), phone: z.string().min(7).max(20).optional()
-  }), req.body);
+    language: z.enum(["ar", "en"]).default("ar"), phoneIdToken: z.string().min(100)
+  }).strict(), req.body);
+  let decoded;
+  try {
+    decoded = await firebaseAuth.verifyIdToken(input.phoneIdToken, true);
+  } catch {
+    throw new ApiError(401, "Invalid or expired phone verification", "INVALID_PHONE_VERIFICATION");
+  }
+  const phone = decoded.phone_number;
+  if (!phone || decoded.firebase?.sign_in_provider !== "phone") {
+    throw new ApiError(422, "Firebase token does not prove phone ownership", "PHONE_NOT_VERIFIED");
+  }
   const email = input.email.toLowerCase();
   if (await prisma.user.findUnique({ where: { email } })) throw new ApiError(409, "Email already registered", "EMAIL_EXISTS");
-  if (input.phone && await prisma.user.findUnique({ where: { phone: input.phone } })) throw new ApiError(409, "Phone already registered", "PHONE_EXISTS");
-  const user = await prisma.user.create({ data: { email, phone: input.phone, passwordHash: await bcrypt.hash(input.password, 12), displayName: input.displayName, role: input.role, language: input.language } });
+  if (await prisma.user.findFirst({ where: { OR: [{ phone }, { firebaseUid: decoded.uid }] } })) throw new ApiError(409, "Phone already registered", "PHONE_EXISTS");
+  const user = await prisma.user.create({ data: { email, phone, firebaseUid: decoded.uid, verified: true, passwordHash: await bcrypt.hash(input.password, 12), displayName: input.displayName, role: input.role, language: input.language } });
   res.status(201).json({ data: { user: publicUser(user), ...(await issueTokens(user)) } });
+}));
+
+authRouter.post("/phone/verify", authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const { idToken } = parse(z.object({ idToken: z.string().min(100) }).strict(), req.body);
+  let decoded;
+  try {
+    decoded = await firebaseAuth.verifyIdToken(idToken, true);
+  } catch {
+    throw new ApiError(401, "Invalid or expired phone verification", "INVALID_PHONE_VERIFICATION");
+  }
+  const phone = decoded.phone_number;
+  if (!phone || decoded.firebase?.sign_in_provider !== "phone") throw new ApiError(422, "Phone was not verified", "PHONE_NOT_VERIFIED");
+  const duplicate = await prisma.user.findFirst({ where: { id: { not: req.user!.uid }, OR: [{ phone }, { firebaseUid: decoded.uid }] }, select: { id: true } });
+  if (duplicate) throw new ApiError(409, "Phone already registered", "PHONE_EXISTS");
+  const user = await prisma.user.update({ where: { id: req.user!.uid }, data: { phone, firebaseUid: decoded.uid, verified: true } });
+  res.json({ data: publicUser(user) });
 }));
 
 authRouter.post("/login", asyncHandler(async (req, res) => {

@@ -98,7 +98,7 @@ npm run build
 ## Production work still required
 
 - Connect the selected payment gateway and implement signed, idempotent webhooks/refunds.
-- Add Firebase phone OTP verification or a selected SMS provider flow.
+- Complete the Firebase Console/device configuration documented in `../FIREBASE_SETUP.md` and test phone OTP/FCM on physical devices.
 - Add API/integration tests against a disposable PostgreSQL database.
 - Add cursor pagination, follow/report APIs, notification scheduling, file post-processing, backups, monitoring, and CI/CD.
 - Configure Firebase credentials only when FCM or Firebase Storage are enabled.

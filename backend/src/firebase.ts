@@ -1,5 +1,6 @@
 import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
+import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
 import { env } from "./config.js";
 
@@ -14,4 +15,5 @@ export const firebaseApp = getApps()[0] ?? initializeApp({
 });
 
 export const messaging = getMessaging(firebaseApp);
+export const firebaseAuth = getAuth(firebaseApp);
 export const bucket = getStorage(firebaseApp).bucket();

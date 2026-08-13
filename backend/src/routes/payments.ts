@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../database.js";
 import { getIo } from "../socket.js";
+import { sendPushSafely } from "../services/notifications.js";
 import { paymentProvider } from "../services/payments.js";
 import { asyncHandler } from "../utils.js";
 
@@ -63,5 +64,11 @@ paymentsRouter.post("/webhook", asyncHandler(async (req, res) => {
     getIo().to(`order:${payment.orderId}`).emit("order:status", { orderId: payment.orderId, ...result.statusChange });
   }
   getIo().to(`user:${payment.userId}`).emit("payment:status", { orderId: payment.orderId, paymentId: payment.id, status: paymentStatus });
+  sendPushSafely(payment.userId, {
+    titleAr: paymentStatus === "paid" ? "تم تأكيد الدفع" : paymentStatus === "failed" ? "فشلت عملية الدفع" : "تم استرجاع المبلغ",
+    titleEn: paymentStatus === "paid" ? "Payment confirmed" : paymentStatus === "failed" ? "Payment failed" : "Payment refunded",
+    bodyAr: `حالة الدفع: ${paymentStatus}`, bodyEn: `Payment status: ${paymentStatus}`,
+    data: { orderId: payment.orderId, paymentId: payment.id, status: paymentStatus }
+  });
   res.json({ data: { received: true } });
 }));

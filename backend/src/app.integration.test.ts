@@ -9,7 +9,8 @@ vi.mock("./database.js", () => ({
 
 vi.mock("./firebase.js", () => ({
   messaging: {},
-  bucket: {}
+  bucket: {},
+  firebaseAuth: { verifyIdToken: vi.fn() }
 }));
 
 describe("HTTP application integration", () => {
