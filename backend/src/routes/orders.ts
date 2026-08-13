@@ -6,6 +6,8 @@ import { getIo } from "../socket.js";
 import type { AuthRequest, OrderStatus } from "../types.js";
 import { orderStatuses } from "../types.js";
 import { ApiError, asyncHandler, pageCursor, pageSize, paginated, parse } from "../utils.js";
+import { paymentProvider } from "../services/payments.js";
+import { env } from "../config.js";
 
 export const ordersRouter = Router();
 ordersRouter.use(authenticate);
@@ -53,7 +55,10 @@ ordersRouter.get("/design-requests", asyncHandler(async (req: AuthRequest, res) 
       : {};
   const rows = await prisma.designRequest.findMany({
     where,
-    include: { assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } } },
+    include: {
+      assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } },
+      customer: { select: { id: true, displayName: true, avatarUrl: true, city: true } }
+    },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     take: limit + 1
@@ -97,7 +102,7 @@ ordersRouter.post("/design-requests/:id/claim", allow("designer"), asyncHandler(
       data: { designRequestId: request.id, designerId: req.user!.uid, conversationId: conversation.id }
     } });
     return { request, conversationId: conversation.id };
-  });
+  }, { maxWait: 10_000, timeout: 20_000 });
   getIo().to(`user:${result.request.customerId}`).emit("design-request:assigned", result);
   res.json({ data: { ...presentDesignRequest(result.request), conversationId: result.conversationId } });
 }));
@@ -105,7 +110,10 @@ ordersRouter.post("/design-requests/:id/claim", allow("designer"), asyncHandler(
 ordersRouter.get("/design-requests/:id", asyncHandler(async (req: AuthRequest, res) => {
   const request = await prisma.designRequest.findUnique({
     where: { id: req.params.id },
-    include: { assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } } }
+    include: {
+      assignedDesigner: { select: { id: true, displayName: true, avatarUrl: true } },
+      customer: { select: { id: true, displayName: true, avatarUrl: true, city: true } }
+    }
   });
   if (!request) throw new ApiError(404, "Design request not found", "NOT_FOUND");
   if (![request.customerId, request.assignedDesignerId].includes(req.user!.uid) && !["admin", "moderator"].includes(req.user!.role)) {
@@ -196,8 +204,15 @@ ordersRouter.post("/:id/cancel", asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 ordersRouter.post("/:id/payment-intent", asyncHandler(async (req: AuthRequest, res) => {
-  const order = await prisma.order.findFirst({ where: { id: req.params.id, customerId: req.user!.uid } });
+  const order = await prisma.order.findFirst({ where: { id: req.params.id, customerId: req.user!.uid }, include: { payments: true } });
   if (!order) throw new ApiError(404, "Order not found", "NOT_FOUND");
-  const payment = await prisma.payment.create({ data: { orderId: order.id, userId: req.user!.uid, amountHalalas: order.totalHalalas, currency: order.currency, provider: "mock" } });
-  res.status(201).json({ data: { paymentId: payment.id, provider: payment.provider, amount: payment.amountHalalas / 100, message: "Payment gateway adapter is pending" } });
+  if (order.status !== "pending_payment") throw new ApiError(409, "Order is not awaiting payment", "ORDER_NOT_PAYABLE");
+  if (order.payments.some(payment => payment.status === "paid")) throw new ApiError(409, "Order is already paid", "ALREADY_PAID");
+  if (order.payments.some(payment => payment.status === "initiated")) throw new ApiError(409, "A payment attempt is already in progress", "PAYMENT_IN_PROGRESS");
+  const invoice = await paymentProvider.createInvoice({ orderId: order.id, amountHalalas: order.totalHalalas, currency: order.currency, description: `AmberDesign order ${order.id}` });
+  const payment = await prisma.payment.create({ data: {
+    orderId: order.id, userId: req.user!.uid, amountHalalas: order.totalHalalas,
+    currency: order.currency, provider: env.PAYMENT_PROVIDER, providerReference: invoice.providerReference, status: "initiated"
+  } });
+  res.status(201).json({ data: { paymentId: payment.id, provider: payment.provider, amount: payment.amountHalalas / 100, checkoutUrl: invoice.checkoutUrl } });
 }));

@@ -1,18 +1,43 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+// import '../services/api_client.dart';
+// import '../services/orders_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/designer_app_background.dart';
 import '../widgets/designer_glass_card.dart';
 import 'send_offer_screen.dart';
-import '../utils/global_data.dart';
+// import 'track_order_screen.dart';
 
-class DesignerRequestDetailsScreen extends StatelessWidget {
+
+class DesignerRequestDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> request;
-
   const DesignerRequestDetailsScreen({super.key, required this.request});
 
   @override
+  State<DesignerRequestDetailsScreen> createState() => _DesignerRequestDetailsScreenState();
+}
+
+class _DesignerRequestDetailsScreenState extends State<DesignerRequestDetailsScreen> {
+  // bool _claiming = false;
+
+  // Future<void> _claim() async {
+  //   setState(() => _claiming = true);
+  //   try {
+  //     final claimed = await OrdersService.instance.claimDesignRequest(widget.request['id'].toString());
+  //     if (!mounted) return;
+  //     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم استلام الطلب وفتح المحادثة مع العميل')));
+  //     await Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => TrackOrderScreen(orderId: claimed['id'].toString(), kind: 'design_request')));
+  //   } on ApiException catch (error) {
+  //     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+  //   } finally {
+  //     if (mounted) setState(() => _claiming = false);
+  //   }
+  // }
+
+  @override
   Widget build(BuildContext context) {
+    final request = widget.request;
+    
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -55,7 +80,9 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                               bottomLeft: Radius.circular(24),
                             ),
                             child: Image.network(
-                              request['images'][0],
+                              request['images'] != null && request['images'].isNotEmpty 
+                                  ? request['images'][0] 
+                                  : 'https://via.placeholder.com/150',
                               height: double.infinity,
                               fit: BoxFit.cover,
                             ),
@@ -70,7 +97,9 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(100),
                                   child: Image.network(
-                                    request['images'][1],
+                                    request['images'] != null && request['images'].length > 1 
+                                        ? request['images'][1] 
+                                        : 'https://via.placeholder.com/150',
                                     width: double.infinity,
                                     fit: BoxFit.cover,
                                   ),
@@ -81,7 +110,9 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(100),
                                   child: Image.network(
-                                    request['images'][2],
+                                    request['images'] != null && request['images'].length > 2 
+                                        ? request['images'][2] 
+                                        : 'https://via.placeholder.com/150',
                                     width: double.infinity,
                                     fit: BoxFit.cover,
                                   ),
@@ -99,14 +130,14 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 24,
-                        backgroundImage: NetworkImage(request['clientAvatar']),
+                        backgroundImage: NetworkImage(request['clientAvatar'] ?? 'https://via.placeholder.com/150'),
                       ),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            request['clientName'],
+                            request['clientName'] ?? 'عميل',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -114,7 +145,7 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            request['date'],
+                            request['date'] ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textMuted,
@@ -132,7 +163,7 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          request['title'],
+                          request['title'] ?? 'طلب تصميم',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -141,7 +172,7 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          request['description'],
+                          request['description'] ?? '',
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textMuted,
@@ -150,14 +181,14 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 24),
 
-                        _buildDetailRow('الفئة', request['category']),
-                        _buildDetailRow('الألوان', request['colors']),
-                        _buildDetailRow('القماش', request['fabric']),
-                        _buildDetailRow('الميزانية', request['budget']),
-                        _buildDetailRow('المدينة', request['city']),
+                        _buildDetailRow('الفئة', request['category'] ?? ''),
+                        _buildDetailRow('الألوان', request['colors'] ?? ''),
+                        _buildDetailRow('القماش', request['fabric'] ?? ''),
+                        _buildDetailRow('الميزانية', request['budget'] ?? ''),
+                        _buildDetailRow('المدينة', request['city'] ?? ''),
                         _buildDetailRow(
                           'الموعد',
-                          request['deadline'],
+                          request['deadline'] ?? '',
                           isLast: true,
                         ),
                       ],
@@ -229,9 +260,7 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.textDark.withOpacity(
-                              0.9,
-                            ),
+                            backgroundColor: AppColors.textDark.withOpacity(0.9),
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
@@ -292,7 +321,6 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
     );
   }
 
-  // 💡 الدالة الجديدة الخاصة بالـ Bottom Sheet
   void _showRejectBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -356,12 +384,8 @@ class DesignerRequestDetailsScreen extends StatelessWidget {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          // إضافة الإشعار
-                          GlobalData.addNotification(
-                            'تم رفض الطلب',
-                            'اعتذرت المصممة عن طلب ${request['title']}',
-                            Icons.close,
-                            0xFFD32F2F,
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('تم رفض الطلب بنجاح')),
                           );
                           Navigator.pop(context); 
                           Navigator.pop(context); 

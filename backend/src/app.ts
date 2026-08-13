@@ -17,6 +17,7 @@ import { platformRouter } from "./routes/platform.js";
 import { supportRouter } from "./routes/support.js";
 import { usersRouter } from "./routes/users.js";
 import { socialRouter } from "./routes/social.js";
+import { paymentsRouter } from "./routes/payments.js";
 
 export const app = express();
 app.set("trust proxy", 1);
@@ -44,6 +45,7 @@ app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/social", socialRouter);
 app.use("/api/v1/catalog", catalogRouter);
 app.use("/api/v1/orders", ordersRouter);
+app.use("/api/v1/payments", paymentsRouter);
 app.use("/api/v1/community", communityRouter);
 app.use("/api/v1/designers", designersRouter);
 app.use("/api/v1/chat", chatRouter);

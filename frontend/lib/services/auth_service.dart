@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_client.dart';
 
@@ -8,8 +9,27 @@ class AuthService {
   final _storage = const FlutterSecureStorage();
   static const _accessKey = 'amber_access_token';
   static const _refreshKey = 'amber_refresh_token';
+  Future<String>? _refreshing;
 
-  Future<String?> accessToken() => _storage.read(key: _accessKey);
+  Future<String?> accessToken() async {
+    final access = await _storage.read(key: _accessKey);
+    if (access == null) return null;
+    if (!_isExpired(access)) return access;
+    return _refreshOnce();
+  }
+
+  bool _isExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))) as Map<String, dynamic>;
+      final expiresAt = (payload['exp'] as num?)?.toInt();
+      if (expiresAt == null) return true;
+      return DateTime.now().millisecondsSinceEpoch ~/ 1000 >= expiresAt - 30;
+    } catch (_) {
+      return true;
+    }
+  }
 
   Future<Map<String, dynamic>> register({
     required String email,
@@ -32,13 +52,13 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> currentUser() async {
-    var access = await _storage.read(key: _accessKey);
+    var access = await accessToken();
     if (access == null) throw const ApiException('يرجى تسجيل الدخول', 401, 'UNAUTHENTICATED');
     try {
       return (await _api.get('/auth/me', token: access))['data'] as Map<String, dynamic>;
     } on ApiException catch (error) {
       if (error.statusCode != 401) rethrow;
-      access = await _refresh();
+      access = await _refreshOnce();
       return (await _api.get('/auth/me', token: access))['data'] as Map<String, dynamic>;
     }
   }
@@ -51,6 +71,14 @@ class AuthService {
     await _storage.write(key: _accessKey, value: data['accessToken'] as String);
     await _storage.write(key: _refreshKey, value: data['refreshToken'] as String);
     return data['accessToken'] as String;
+  }
+
+  Future<String> _refreshOnce() {
+    final active = _refreshing;
+    if (active != null) return active;
+    final future = _refresh();
+    _refreshing = future;
+    return future.whenComplete(() => _refreshing = null);
   }
 
   Future<Map<String, dynamic>> _saveSession(Map<String, dynamic> response) async {

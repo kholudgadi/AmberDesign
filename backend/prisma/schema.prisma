@@ -352,6 +352,8 @@ model Payment {
   updatedAt DateTime @updatedAt
   order Order @relation(fields: [orderId], references: [id])
   user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerReference])
 }
 
 model Post {

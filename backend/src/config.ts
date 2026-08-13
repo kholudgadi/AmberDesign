@@ -14,7 +14,9 @@ const schema = z.object({
   FIREBASE_STORAGE_BUCKET: z.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
   PAYMENT_PROVIDER: z.enum(["mock", "hyperpay", "moyasar"]).default("mock"),
-  PAYMENT_WEBHOOK_SECRET: z.string().min(8).default("replace-me")
+  PAYMENT_WEBHOOK_SECRET: z.string().min(8).default("replace-me"),
+  MOYASAR_SECRET_KEY: z.string().min(1).optional(),
+  MOYASAR_API_BASE: z.string().url().default("https://api.moyasar.com/v1")
 });
 
 const parsed = schema.safeParse(process.env);
@@ -24,6 +26,9 @@ if (!parsed.success) {
 
 if (parsed.data.NODE_ENV === "production" && parsed.data.PAYMENT_WEBHOOK_SECRET === "replace-me") {
   throw new Error("PAYMENT_WEBHOOK_SECRET must be changed in production");
+}
+if (parsed.data.PAYMENT_PROVIDER === "moyasar" && !parsed.data.MOYASAR_SECRET_KEY) {
+  throw new Error("MOYASAR_SECRET_KEY is required when PAYMENT_PROVIDER=moyasar");
 }
 
 export const env = {

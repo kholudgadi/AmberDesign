@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import '../utils/global_data.dart';
 import '../screens/order_review_screen.dart';
 
 /// Adaptive request form for fashion and interior-design services.

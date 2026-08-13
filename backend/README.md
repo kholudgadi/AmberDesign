@@ -14,22 +14,21 @@ Node.js, Express, TypeScript, PostgreSQL/Prisma, and Socket.io backend for the A
 - Authenticated Socket.io rooms, new-message events, and read receipts
 - Designer profiles, portfolio entries, verified-order ratings, and experience data
 - Persisted customer notifications and live order Timeline updates
-- Dockerfile and local PostgreSQL Compose service
+- Supabase/PostgreSQL connection through Prisma
 
 ## Local setup
 
-Requirements: Node.js 20+ and PostgreSQL 16+. Docker is optional.
+Requirements: Node.js 20+ and access to a PostgreSQL database (the current environment uses Supabase).
 
 ```bash
 cp .env.example .env
 npm install
-docker compose up -d postgres
 npm run db:deploy
 npm run seed
 npm run dev
 ```
 
-Docker is not installed in the current development environment, so PostgreSQL must either be installed locally or run elsewhere and `DATABASE_URL` updated.
+Set `DATABASE_URL` and `DIRECT_URL` in `.env` before deploying migrations. Never commit `.env` or database credentials.
 
 Optional admin seed values:
 

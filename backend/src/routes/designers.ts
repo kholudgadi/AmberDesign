@@ -17,6 +17,18 @@ const portfolioSchema = z.object({
   featured: z.boolean().default(false)
 });
 
+designersRouter.get("/me/dashboard", authenticate, allow("designer"), asyncHandler(async (req: AuthRequest, res) => {
+  const [profile, availableRequests, assignedRequests, portfolio, ratings, recentReviews] = await prisma.$transaction([
+    prisma.user.findUniqueOrThrow({ where: { id: req.user!.uid }, select: { id: true, displayName: true, email: true, bio: true, avatarUrl: true, city: true, verified: true, experienceYears: true, specialties: true } }),
+    prisma.designRequest.count({ where: { assignedDesignerId: null, status: "submitted" } }),
+    prisma.designRequest.groupBy({ by: ["status"], where: { assignedDesignerId: req.user!.uid }, _count: true, orderBy: { status: "asc" } }),
+    prisma.portfolioItem.findMany({ where: { designerId: req.user!.uid, active: true }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }], take: 6 }),
+    prisma.designerReview.aggregate({ where: { designerId: req.user!.uid }, _avg: { rating: true }, _count: true }),
+    prisma.designerReview.findMany({ where: { designerId: req.user!.uid }, include: { customer: { select: { id: true, displayName: true, avatarUrl: true } } }, orderBy: { createdAt: "desc" }, take: 5 })
+  ]);
+  res.json({ data: { profile, availableRequests, assignedRequests: Object.fromEntries(assignedRequests.map(row => [row.status, row._count])), portfolio, ratingAverage: ratings._avg.rating ?? 0, ratingCount: ratings._count, recentReviews } });
+}));
+
 designersRouter.get("/:id", asyncHandler(async (req, res) => {
   const designer = await prisma.user.findFirst({
     where: { id: req.params.id, role: "designer", disabled: false },
