@@ -4,6 +4,7 @@ import 'designer_dashboard_view.dart';
 import 'designer_management_view.dart';
 import 'designer_requests_view.dart';
 import 'designer_products_view.dart';
+import 'designer_account_view.dart';
 
 class DesignerHomeScreen extends StatefulWidget {
   const DesignerHomeScreen({super.key});
@@ -24,7 +25,7 @@ class _DesignerHomeScreenState extends State<DesignerHomeScreen> {
       DesignerProductsView(onBack: () => _changeTab(0)),
       DesignerRequestsView(onBack: () => _changeTab(0)),
       DesignerManagementView(onBack: () => _changeTab(0)),
-      const Center(child: Text('الملف الشخصي')),
+      DesignerAccountView(onBack: () => _changeTab(0)),
     ];
 
     return Directionality(

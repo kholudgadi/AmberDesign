@@ -4,6 +4,7 @@ import '../utils/app_colors.dart';
 import '../utils/global_data.dart';
 import '../widgets/designer_app_background.dart'; 
 import '../widgets/designer_glass_card.dart'; 
+import 'designer_reviews_screen.dart';
 
 class DesignerDashboardView extends StatelessWidget {
   final Function(int) onTabChange;
@@ -95,7 +96,12 @@ class DesignerDashboardView extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const DesignerReviewsScreen()),
+                    );
+                  },
                   child: DesignerGlassCard( 
                     padding: const EdgeInsets.all(20),
                     borderRadius: 24,
