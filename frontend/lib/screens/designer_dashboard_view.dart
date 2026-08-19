@@ -5,6 +5,9 @@ import '../utils/global_data.dart';
 import '../widgets/designer_app_background.dart'; 
 import '../widgets/designer_glass_card.dart'; 
 import 'designer_reviews_screen.dart';
+import 'designer_edit_portfolio_screen.dart';
+import '../widgets/designer_drawer.dart';
+import 'designer_notifications_sheet.dart';
 
 class DesignerDashboardView extends StatelessWidget {
   final Function(int) onTabChange;
@@ -18,23 +21,35 @@ class DesignerDashboardView extends StatelessWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      drawer: DesignerDrawer(onTabChange: onTabChange),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: AppColors.textDark, size: 28),
-          onPressed: () {
-            debugPrint("تم الضغط على البرقر منيو");
-          },
+        leading: Builder( 
+          builder: (context) {
+            return IconButton(
+              icon: const Icon(Icons.menu, color: AppColors.textDark, size: 28),
+              onPressed: () {
+                Scaffold.of(context).openDrawer(); 
+              },
+            );
+          }
         ),
         title: const Text('الرئيسية', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: AppColors.textDark),
-            onPressed: () {}, 
-          ),
-        ],
+       IconButton(
+         icon: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 28),
+         onPressed: () {
+           showModalBottomSheet(
+             context: context,
+             isScrollControlled: true, 
+             backgroundColor: Colors.transparent, 
+             builder: (context) => const DesignerNotificationsSheet(),
+           );
+         }, 
+       ),
+     ],
       ),
       body: DesignerAppBackground(
         child: SafeArea(
@@ -200,7 +215,12 @@ class DesignerDashboardView extends StatelessWidget {
                               children: [
                                 const Text('معرض الأعمال', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                                 GestureDetector(
-                                  onTap: () {},
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const DesignerEditPortfolioScreen()),
+                                    );
+                                  },
                                   child: const Text('تعديل المحفظة ←', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark, decoration: TextDecoration.underline)),
                                 ),
                               ],

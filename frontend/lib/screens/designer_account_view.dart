@@ -8,7 +8,9 @@ import 'designer_change_password_screen.dart';
 import 'designer_reviews_screen.dart';
 
 class DesignerAccountView extends StatelessWidget {
-  const DesignerAccountView({super.key, required void Function() onBack});
+  const DesignerAccountView({super.key, required this.onBack});
+
+  final void Function() onBack; 
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +18,14 @@ class DesignerAccountView extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+            onPressed: onBack, 
+          ),
+        ),
         body: DesignerAppBackground(
           child: SafeArea(
             child: SingleChildScrollView(
@@ -112,8 +122,7 @@ class DesignerAccountView extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    const DesignerEditProfileScreen(),
+                                builder: (_) => const DesignerEditProfileScreen(),
                               ),
                             );
                           },
@@ -128,8 +137,7 @@ class DesignerAccountView extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    const DesignerChangePasswordScreen(),
+                                builder: (_) => const DesignerChangePasswordScreen(),
                               ),
                             );
                           },
@@ -296,11 +304,9 @@ class DesignerAccountView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // زر الإلغاء (رمادي)
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () =>
-                            Navigator.pop(context), 
+                        onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color.fromARGB(
                             255,
