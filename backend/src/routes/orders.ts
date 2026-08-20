@@ -113,6 +113,177 @@ ordersRouter.post("/design-requests/:id/claim", allow("designer"), asyncHandler(
   res.json({ data: { ...presentDesignRequest(result.request), conversationId: result.conversationId } });
 }));
 
+ordersRouter.post("/design-requests/:id/quote", allow("designer"), asyncHandler(async (req: AuthRequest, res) => {
+  const input = parse(z.object({
+    price: z.number().positive().max(1_000_000),
+    duration: z.string().trim().min(1).max(100).optional(),
+    deliveryDate: z.string().trim().min(1).max(100).optional(),
+    message: z.string().trim().max(2000).optional()
+  }).strict(), req.body);
+
+  const result = await prisma.$transaction(async tx => {
+    const claimed = await tx.designRequest.updateMany({
+      where: { id: req.params.id, assignedDesignerId: null, status: "submitted" },
+      data: { assignedDesignerId: req.user!.uid, status: "assigned" }
+    });
+    const existing = await tx.designRequest.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new ApiError(404, "Design request not found", "NOT_FOUND");
+    if (!claimed.count && existing.assignedDesignerId !== req.user!.uid) {
+      throw new ApiError(409, "Design request is assigned to another designer", "REQUEST_ALREADY_CLAIMED");
+    }
+    if (!claimed.count && !["submitted", "assigned"].includes(existing.status)) {
+      throw new ApiError(409, `Cannot send a quote from status "${existing.status}"`, "INVALID_STATUS");
+    }
+    const participants = [existing.customerId, req.user!.uid].sort();
+    const key = `${participants.join(":")}:design-request:${existing.id}`;
+    const conversation = await tx.conversation.upsert({
+      where: { key }, update: {},
+      create: { key, designRequestId: existing.id, participants: { create: participants.map(userId => ({ userId })) } }
+    });
+    const request = await tx.designRequest.update({
+      where: { id: existing.id },
+      data: {
+        status: "quoted", quotedHalalas: Math.round(input.price * 100),
+        quoteDuration: input.duration, quoteDeliveryDate: input.deliveryDate, quoteMessage: input.message
+      }
+    });
+    await tx.notification.create({ data: {
+      userId: request.customerId, type: "design_request_quoted",
+      titleAr: "وصلك عرض سعر جديد", titleEn: "You received a new quote",
+      bodyAr: `عرض المصمم: ${input.price.toFixed(0)} ر.س`, bodyEn: `Designer's quote: SAR ${input.price.toFixed(0)}`,
+      data: { designRequestId: request.id, quotedPrice: input.price, conversationId: conversation.id }
+    } });
+    return { request, conversationId: conversation.id };
+  }, { maxWait: 10_000, timeout: 20_000 });
+
+  const payload = { ...presentDesignRequest(result.request), conversationId: result.conversationId };
+  getIo().to(`user:${result.request.customerId}`).emit("design-request:quoted", payload);
+  sendPushSafely(result.request.customerId, {
+    titleAr: "وصلك عرض سعر جديد", titleEn: "You received a new quote",
+    bodyAr: `عرض المصمم: ${input.price.toFixed(0)} ر.س`, bodyEn: `Designer's quote: SAR ${input.price.toFixed(0)}`,
+    data: { designRequestId: result.request.id, conversationId: result.conversationId }
+  });
+  res.json({ data: payload });
+}));
+
+ordersRouter.post("/design-requests/:id/accept-quote", allow("customer"), asyncHandler(async (req: AuthRequest, res) => {
+  const result = await prisma.$transaction(async tx => {
+    const accepted = await tx.designRequest.updateMany({
+      where: {
+        id: req.params.id,
+        customerId: req.user!.uid,
+        status: "quoted",
+        quotedHalalas: { not: null },
+        assignedDesignerId: { not: null }
+      },
+      data: { status: "accepted" }
+    });
+    if (!accepted.count) {
+      const request = await tx.designRequest.findUnique({ where: { id: req.params.id } });
+      if (!request) throw new ApiError(404, "Design request not found", "NOT_FOUND");
+      if (request.customerId !== req.user!.uid) throw new ApiError(403, "Cannot accept this quote", "FORBIDDEN");
+      throw new ApiError(409, "This quote is no longer available for acceptance", "QUOTE_NOT_ACCEPTABLE");
+    }
+    const request = await tx.designRequest.findUniqueOrThrow({ where: { id: req.params.id } });
+    await tx.notification.create({ data: {
+      userId: request.assignedDesignerId!, type: "design_request_quote_accepted",
+      titleAr: "تم قبول عرضك", titleEn: "Your quote was accepted",
+      bodyAr: "وافق العميل على السعر والمدة ويمكنك بدء التنفيذ", bodyEn: "The customer accepted your quote; you can start working",
+      data: { designRequestId: request.id, customerId: request.customerId }
+    } });
+    return request;
+  });
+
+  const payload = presentDesignRequest(result);
+  getIo().to(`user:${result.assignedDesignerId}`).emit("design-request:quote-accepted", payload);
+  sendPushSafely(result.assignedDesignerId!, {
+    titleAr: "تم قبول عرضك", titleEn: "Your quote was accepted",
+    bodyAr: "وافق العميل على السعر والمدة ويمكنك بدء التنفيذ", bodyEn: "The customer accepted your quote; you can start working",
+    data: { designRequestId: result.id }
+  });
+  res.json({ data: payload });
+}));
+
+ordersRouter.post("/design-requests/:id/reject-quote", allow("customer"), asyncHandler(async (req: AuthRequest, res) => {
+  const result = await prisma.$transaction(async tx => {
+    const existing = await tx.designRequest.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new ApiError(404, "Design request not found", "NOT_FOUND");
+    if (existing.customerId !== req.user!.uid) throw new ApiError(403, "Cannot reject this quote", "FORBIDDEN");
+    if (existing.status !== "quoted" || !existing.assignedDesignerId) {
+      throw new ApiError(409, "This quote is no longer available for rejection", "QUOTE_NOT_REJECTABLE");
+    }
+    const designerId = existing.assignedDesignerId;
+    const request = await tx.designRequest.update({
+      where: { id: existing.id },
+      data: {
+        status: "submitted",
+        assignedDesignerId: null,
+        quotedHalalas: null,
+        quoteDuration: null,
+        quoteDeliveryDate: null,
+        quoteMessage: null
+      }
+    });
+    await tx.notification.create({ data: {
+      userId: designerId, type: "design_request_quote_rejected",
+      titleAr: "تم رفض عرضك", titleEn: "Your quote was rejected",
+      bodyAr: "لم يوافق العميل على العرض وأُعيد الطلب إلى الطلبات المتاحة", bodyEn: "The customer declined the quote and the request is available again",
+      data: { designRequestId: request.id, customerId: request.customerId }
+    } });
+    return { request, designerId };
+  });
+
+  const payload = presentDesignRequest(result.request);
+  getIo().to(`user:${result.designerId}`).emit("design-request:quote-rejected", payload);
+  sendPushSafely(result.designerId, {
+    titleAr: "تم رفض عرضك", titleEn: "Your quote was rejected",
+    bodyAr: "لم يوافق العميل على العرض وأُعيد الطلب إلى الطلبات المتاحة", bodyEn: "The customer declined the quote and the request is available again",
+    data: { designRequestId: result.request.id }
+  });
+  res.json({ data: payload });
+}));
+
+ordersRouter.patch("/design-requests/:id/status", allow("customer", "designer"), asyncHandler(async (req: AuthRequest, res) => {
+  const input = parse(z.object({ status: z.enum(["in_progress", "ready", "completed"]) }).strict(), req.body);
+  const rules = {
+    in_progress: { from: "accepted", role: "designer" },
+    ready: { from: "in_progress", role: "designer" },
+    completed: { from: "ready", role: "customer" }
+  } as const;
+  const rule = rules[input.status];
+  if (req.user!.role !== rule.role) throw new ApiError(403, "You cannot perform this transition", "FORBIDDEN");
+
+  const result = await prisma.$transaction(async tx => {
+    const existing = await tx.designRequest.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new ApiError(404, "Design request not found", "NOT_FOUND");
+    const ownsRequest = req.user!.role === "customer"
+      ? existing.customerId === req.user!.uid
+      : existing.assignedDesignerId === req.user!.uid;
+    if (!ownsRequest) throw new ApiError(403, "Cannot update this design request", "FORBIDDEN");
+    if (existing.status !== rule.from) {
+      throw new ApiError(409, `Invalid transition: ${existing.status} -> ${input.status}`, "INVALID_STATUS_TRANSITION");
+    }
+
+    const request = await tx.designRequest.update({ where: { id: existing.id }, data: { status: input.status } });
+    const targetUserId = req.user!.role === "customer" ? existing.assignedDesignerId! : existing.customerId;
+    const copy = input.status === "in_progress"
+      ? { titleAr: "بدأ تنفيذ طلبك", titleEn: "Work started", bodyAr: "بدأ المصمم العمل على طلب التصميم", bodyEn: "The designer started working on your request" }
+      : input.status === "ready"
+        ? { titleAr: "طلبك جاهز للمراجعة", titleEn: "Ready for review", bodyAr: "أنهى المصمم العمل ويمكنك الآن مراجعة الطلب", bodyEn: "The designer finished the work; you can review it now" }
+        : { titleAr: "تم اعتماد الطلب", titleEn: "Request completed", bodyAr: "اعتمد العميل الطلب وتم إكماله", bodyEn: "The customer approved and completed the request" };
+    await tx.notification.create({ data: {
+      userId: targetUserId, type: `design_request_${input.status}`,
+      ...copy, data: { designRequestId: request.id, status: input.status }
+    } });
+    return { request, targetUserId, copy };
+  });
+
+  const payload = presentDesignRequest(result.request);
+  getIo().to(`user:${result.targetUserId}`).emit("design-request:status", payload);
+  sendPushSafely(result.targetUserId, { ...result.copy, data: { designRequestId: result.request.id, status: input.status } });
+  res.json({ data: payload });
+}));
+
 ordersRouter.get("/design-requests/:id", asyncHandler(async (req: AuthRequest, res) => {
   const request = await prisma.designRequest.findUnique({
     where: { id: req.params.id },

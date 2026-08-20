@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_client.dart';
 import '../services/orders_service.dart';
+import '../services/upload_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/glass_card.dart';
@@ -10,12 +12,16 @@ class OrderReviewScreen extends StatefulWidget {
   final List<Map<String, String>> orderDetails;
   final double serviceFee;
   final double platformFee;
+  final String details;
+  final List<XFile> images;
 
   const OrderReviewScreen({
     super.key,
     required this.orderDetails,
     required this.serviceFee,
     required this.platformFee,
+    this.details = '',
+    this.images = const [],
   });
 
   @override
@@ -29,6 +35,9 @@ class _OrderReviewScreenState extends State<OrderReviewScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
+      final referenceUrls = widget.images.isEmpty
+          ? <String>[]
+          : await UploadService.instance.uploadImages(widget.images);
       final specifications = <String, String>{
         for (final detail in widget.orderDetails)
           if (detail['title'] != null && detail['value'] != null)
@@ -45,12 +54,16 @@ class _OrderReviewScreenState extends State<OrderReviewScreen> {
         specifications: specifications,
         serviceFee: widget.serviceFee,
         platformFee: widget.platformFee,
+        referenceUrls: referenceUrls,
+        details: widget.details,
       );
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => RequestSentSuccessScreen(orderId: request['id'].toString())),
       );
+    } on UploadException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } on ApiException catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {

@@ -37,6 +37,9 @@ class _DesignerRequestDetailsScreenState extends State<DesignerRequestDetailsScr
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
+    final customer = request['customer'] as Map<String, dynamic>?;
+    final referenceUrls = ((request['referenceUrls'] as List<dynamic>?) ?? const []).map((e) => e.toString()).toList();
+    final specifications = (request['specifications'] as Map<String, dynamic>?) ?? const {};
     
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -68,61 +71,22 @@ class _DesignerRequestDetailsScreenState extends State<DesignerRequestDetailsScr
                 children: [
                   SizedBox(
                     height: 250,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(100),
-                              bottomRight: Radius.circular(100),
-                              topLeft: Radius.circular(24),
-                              bottomLeft: Radius.circular(24),
-                            ),
-                            child: Image.network(
-                              request['images'] != null && request['images'].isNotEmpty 
-                                  ? request['images'][0] 
-                                  : 'https://via.placeholder.com/150',
-                              height: double.infinity,
-                              fit: BoxFit.cover,
+                    child: referenceUrls.isEmpty
+                        ? Container(
+                            decoration: BoxDecoration(color: AppColors.textMuted.withOpacity(0.12), borderRadius: BorderRadius.circular(24)),
+                            alignment: Alignment.center,
+                            child: const Text('لا توجد صور مرفقة'),
+                          )
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: referenceUrls.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 12),
+                            itemBuilder: (_, index) => ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Image.network(referenceUrls[index], width: 240, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(width: 240, color: AppColors.textMuted.withOpacity(0.12), child: const Icon(Icons.broken_image_outlined))),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(100),
-                                  child: Image.network(
-                                    request['images'] != null && request['images'].length > 1 
-                                        ? request['images'][1] 
-                                        : 'https://via.placeholder.com/150',
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(100),
-                                  child: Image.network(
-                                    request['images'] != null && request['images'].length > 2 
-                                        ? request['images'][2] 
-                                        : 'https://via.placeholder.com/150',
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -130,14 +94,15 @@ class _DesignerRequestDetailsScreenState extends State<DesignerRequestDetailsScr
                     children: [
                       CircleAvatar(
                         radius: 24,
-                        backgroundImage: NetworkImage(request['clientAvatar'] ?? 'https://via.placeholder.com/150'),
+                        backgroundImage: (customer?['avatarUrl']?.toString().isNotEmpty ?? false) ? NetworkImage(customer!['avatarUrl'].toString()) : null,
+                        child: (customer?['avatarUrl']?.toString().isNotEmpty ?? false) ? null : const Icon(Icons.person),
                       ),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            request['clientName'] ?? 'عميل',
+                            customer?['displayName']?.toString() ?? 'عميل',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -145,7 +110,7 @@ class _DesignerRequestDetailsScreenState extends State<DesignerRequestDetailsScr
                             ),
                           ),
                           Text(
-                            request['date'] ?? '',
+                            request['createdAt']?.toString() ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textMuted,
@@ -172,7 +137,7 @@ class _DesignerRequestDetailsScreenState extends State<DesignerRequestDetailsScr
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          request['description'] ?? '',
+                          request['details']?.toString() ?? '',
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textMuted,
@@ -181,14 +146,12 @@ class _DesignerRequestDetailsScreenState extends State<DesignerRequestDetailsScr
                         ),
                         const SizedBox(height: 24),
 
-                        _buildDetailRow('الفئة', request['category'] ?? ''),
-                        _buildDetailRow('الألوان', request['colors'] ?? ''),
-                        _buildDetailRow('القماش', request['fabric'] ?? ''),
-                        _buildDetailRow('الميزانية', request['budget'] ?? ''),
-                        _buildDetailRow('المدينة', request['city'] ?? ''),
+                        _buildDetailRow('الفئة', request['category'] == 'interior' ? 'تصميم داخلي' : 'أزياء'),
+                        ...specifications.entries.map((entry) => _buildDetailRow(entry.key, entry.value?.toString() ?? '')),
+                        _buildDetailRow('المدينة', customer?['city']?.toString() ?? ''),
                         _buildDetailRow(
                           'الموعد',
-                          request['deadline'] ?? '',
+                          request['status']?.toString() ?? '',
                           isLast: true,
                         ),
                       ],

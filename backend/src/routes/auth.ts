@@ -72,6 +72,19 @@ authRouter.post("/login", asyncHandler(async (req, res) => {
   res.json({ data: { user: publicUser(user), ...(await issueTokens(user)) } });
 }));
 
+authRouter.post("/change-password", authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const input = parse(z.object({ currentPassword: z.string().min(1).max(128), newPassword: z.string().min(8).max(128) }).strict(), req.body);
+  const user = await prisma.user.findUnique({ where: { id: req.user!.uid }, select: { passwordHash: true } });
+  if (!user?.passwordHash || !(await bcrypt.compare(input.currentPassword, user.passwordHash))) {
+    throw new ApiError(401, "Current password is incorrect", "INVALID_CURRENT_PASSWORD");
+  }
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: req.user!.uid }, data: { passwordHash: await bcrypt.hash(input.newPassword, 12) } }),
+    prisma.refreshToken.updateMany({ where: { userId: req.user!.uid, revokedAt: null }, data: { revokedAt: new Date() } })
+  ]);
+  res.json({ data: { success: true } });
+}));
+
 authRouter.post("/refresh", asyncHandler(async (req, res) => {
   const { refreshToken } = parse(z.object({ refreshToken: z.string().min(40) }), req.body);
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashToken(refreshToken) }, include: { user: true } });

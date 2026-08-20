@@ -32,6 +32,17 @@ platformRouter.post("/uploads/sign", authenticate, asyncHandler(async (req: Auth
   const [url] = await bucket.file(path).getSignedUrl({ version: "v4", action: "write", expires: Date.now() + 15 * 60 * 1000, contentType: input.contentType });
   res.json({ data: { uploadUrl: url, path, expiresInSeconds: 900 } });
 }));
+platformRouter.post("/uploads/confirm", authenticate, asyncHandler(async (req: AuthRequest, res) => {
+  const input = parse(z.object({ path: z.string().min(1).max(300) }).strict(), req.body);
+  if (!input.path.startsWith(`users/${req.user!.uid}/uploads/`)) {
+    throw new ApiError(403, "Cannot confirm a file outside your own uploads", "FORBIDDEN");
+  }
+  const file = bucket.file(input.path);
+  const [exists] = await file.exists();
+  if (!exists) throw new ApiError(404, "Uploaded file not found", "NOT_FOUND");
+  await file.makePublic();
+  res.json({ data: { url: `https://storage.googleapis.com/${bucket.name}/${input.path}` } });
+}));
 platformRouter.post("/ai/taste-analysis", authenticate, asyncHandler(async (req: AuthRequest, res) => {
   const input = parse(z.object({ domain: z.enum(["fashion", "interior"]), imageUrls: z.array(z.string().url()).min(1).max(5), answers: z.record(z.string()).default({}) }), req.body);
   const job = await prisma.aiJob.create({ data: { ...input, answers: input.answers ?? {}, userId: req.user!.uid, type: "taste_analysis" } }); res.status(202).json({ data: job });

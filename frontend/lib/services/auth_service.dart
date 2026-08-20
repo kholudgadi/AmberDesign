@@ -63,6 +63,26 @@ class AuthService {
     }
   }
 
+  Future<T> authenticated<T>(Future<T> Function(String token) request) async {
+    var token = await accessToken();
+    if (token == null) throw const ApiException('يرجى تسجيل الدخول', 401, 'UNAUTHENTICATED');
+    try {
+      return await request(token);
+    } on ApiException catch (error) {
+      if (error.statusCode != 401) rethrow;
+      token = await _refreshOnce();
+      return request(token);
+    }
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _api.post('/auth/change-password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    }, token: await accessToken());
+    await clearSession();
+  }
+
   Future<String> _refresh() async {
     final refresh = await _storage.read(key: _refreshKey);
     if (refresh == null) throw const ApiException('انتهت الجلسة، سجل الدخول مجددًا', 401);

@@ -16,7 +16,7 @@ const itemSchema = z.object({
 const presentItem = <T extends { priceHalalas: number }>(item: T) => ({ ...item, price: item.priceHalalas / 100, priceHalalas: undefined });
 
 catalogRouter.get("/me/items", authenticate, allow("designer", "vendor", "admin"), asyncHandler(async (req: AuthRequest, res) => {
-  const items = await prisma.catalogItem.findMany({ where: { ownerId: req.user!.uid }, orderBy: { createdAt: "desc" } });
+  const items = await prisma.catalogItem.findMany({ where: { ownerId: req.user!.uid, moderationStatus: { not: "hidden" } }, orderBy: { createdAt: "desc" } });
   res.json({ data: items.map(presentItem) });
 }));
 
@@ -57,6 +57,14 @@ catalogRouter.patch("/items/:id", authenticate, allow("designer", "vendor", "adm
   const { price, ...data } = input;
   await prisma.catalogItem.update({ where: { id: item.id }, data: { ...data, priceHalalas: price === undefined ? undefined : Math.round(price * 100), active: false, moderationStatus: "pending" } });
   res.json({ data: { success: true } });
+}));
+
+catalogRouter.delete("/items/:id", authenticate, allow("designer", "vendor", "admin"), asyncHandler(async (req: AuthRequest, res) => {
+  const item = await prisma.catalogItem.findUnique({ where: { id: req.params.id }, select: { ownerId: true } });
+  if (!item) throw new ApiError(404, "Item not found", "NOT_FOUND");
+  if (req.user!.role !== "admin" && item.ownerId !== req.user!.uid) throw new ApiError(403, "Not the item owner", "FORBIDDEN");
+  await prisma.catalogItem.update({ where: { id: req.params.id }, data: { active: false, moderationStatus: "hidden" } });
+  res.status(204).send();
 }));
 
 catalogRouter.get("/categories", asyncHandler(async (_req, res) => {

@@ -239,10 +239,10 @@ class _DesignerRequestsViewState extends State<DesignerRequestsView> {
   }
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
-    final String imageUrl = (request['images'] != null && request['images'].isNotEmpty) 
-        ? request['images'][0] 
-        : 'https://via.placeholder.com/400';
-    final String clientAvatar = request['clientAvatar'] ?? 'https://via.placeholder.com/150';
+    final urls = (request['referenceUrls'] as List<dynamic>?) ?? const [];
+    final String? imageUrl = urls.isNotEmpty ? urls.first.toString() : null;
+    final customer = request['customer'] as Map<String, dynamic>?;
+    final String? clientAvatar = customer?['avatarUrl']?.toString();
     final String clientName = (request['customer'] as Map<String, dynamic>?)?['displayName']?.toString() ?? request['clientName'] ?? 'عميل';
     
     return GestureDetector(
@@ -265,7 +265,10 @@ class _DesignerRequestsViewState extends State<DesignerRequestsView> {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    child: Image.network(imageUrl, width: double.infinity, fit: BoxFit.cover),
+                    child: imageUrl == null
+                        ? Container(width: double.infinity, color: AppColors.textMuted.withOpacity(0.12), child: const Icon(Icons.image_not_supported_outlined))
+                        : Image.network(imageUrl, width: double.infinity, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(width: double.infinity, color: AppColors.textMuted.withOpacity(0.12), child: const Icon(Icons.broken_image_outlined))),
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -293,7 +296,11 @@ class _DesignerRequestsViewState extends State<DesignerRequestsView> {
                     right: 16,
                     child: Row(
                       children: [
-                        CircleAvatar(radius: 16, backgroundImage: NetworkImage(clientAvatar)),
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: (clientAvatar != null && clientAvatar.isNotEmpty) ? NetworkImage(clientAvatar) : null,
+                          child: (clientAvatar == null || clientAvatar.isEmpty) ? const Icon(Icons.person, size: 16) : null,
+                        ),
                         const SizedBox(width: 8),
                         Text(clientName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                       ],

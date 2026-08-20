@@ -10,7 +10,7 @@ import '../screens/request_design_view.dart';
 import '../screens/my_orders_view.dart';
 import '../screens/profile_view.dart';
 import '../widgets/app_drawer.dart';
-import 'notifications_dialog.dart';
+import '../widgets/notification_bell.dart';
 import 'designer_profile_screen.dart';
 
 /// Main signed-in experience that hosts home content and user navigation tabs.
@@ -292,11 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
           
           isSubPage
               ? const SizedBox(width: 48) 
-              : IconButton(
-                  icon: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 28),
-                  // Opens the same notification dialog as the drawer menu item.
-                  onPressed: () => showNotificationsDialog(context),
-                ),
+              : const NotificationBell(),
         ],
       ),
     );

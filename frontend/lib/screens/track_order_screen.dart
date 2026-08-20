@@ -20,16 +20,83 @@ class TrackOrderScreen extends StatefulWidget {
 class _TrackOrderScreenState extends State<TrackOrderScreen> {
   late Future<Map<String, dynamic>> _order;
   bool _openingChat = false;
+  bool _acceptingOffer = false;
+  bool _rejectingOffer = false;
+  bool _updatingStatus = false;
+  String? _currentRole;
 
   static const _statuses = ['pending_payment', 'confirmed', 'accepted', 'in_progress', 'ready', 'shipped', 'completed'];
   static const _labels = ['بانتظار الدفع', 'تم تأكيد الطلب', 'قبل المصمم الطلب', 'قيد التنفيذ', 'جاهز', 'تم الشحن', 'مكتمل'];
-  static const _designStatuses = ['submitted', 'assigned', 'in_progress', 'ready', 'completed'];
-  static const _designLabels = ['تم إرسال الطلب', 'تم تعيين المصمم', 'قيد التنفيذ', 'جاهز للمراجعة', 'مكتمل'];
+  static const _designStatuses = ['submitted', 'assigned', 'quoted', 'accepted', 'in_progress', 'ready', 'completed'];
+  static const _designLabels = ['تم إرسال الطلب', 'تم تعيين المصمم', 'وصل عرض السعر', 'تم قبول العرض', 'قيد التنفيذ', 'جاهز للمراجعة', 'مكتمل'];
 
   @override
   void initState() {
     super.initState();
     _order = OrdersService.instance.detail(widget.orderId, kind: widget.kind);
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    final user = await AuthService.instance.currentUser();
+    if (mounted) setState(() => _currentRole = user['role']?.toString());
+  }
+
+  Future<void> _updateDesignStatus(String status, String successMessage) async {
+    if (_updatingStatus) return;
+    setState(() => _updatingStatus = true);
+    try {
+      await OrdersService.instance.updateDesignRequestStatus(widget.orderId, status);
+      if (!mounted) return;
+      setState(() => _order = OrdersService.instance.detail(widget.orderId, kind: widget.kind));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _updatingStatus = false);
+    }
+  }
+
+  Future<void> _acceptOffer() async {
+    if (_acceptingOffer) return;
+    setState(() => _acceptingOffer = true);
+    try {
+      await OrdersService.instance.acceptOffer(widget.orderId);
+      if (!mounted) return;
+      setState(() => _order = OrdersService.instance.detail(widget.orderId, kind: widget.kind));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم قبول العرض بنجاح')));
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _acceptingOffer = false);
+    }
+  }
+
+  Future<void> _rejectOffer() async {
+    if (_rejectingOffer) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('رفض العرض'),
+        content: const Text('سيُعاد الطلب إلى قائمة الطلبات العامة ليتمكن مصمم آخر من إرسال عرض. هل تريد المتابعة؟'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('تراجع')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('رفض العرض', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _rejectingOffer = true);
+    try {
+      await OrdersService.instance.rejectOffer(widget.orderId);
+      if (!mounted) return;
+      setState(() => _order = OrdersService.instance.detail(widget.orderId, kind: widget.kind));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم رفض العرض وإعادة الطلب للمصممين')));
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _rejectingOffer = false);
+    }
   }
 
   Future<void> _chat(Map<String, dynamic> order) async {
@@ -125,6 +192,72 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                     })),
                   ),
                   const SizedBox(height: 20),
+                  if (widget.kind == 'design_request' && order['quotedPrice'] != null) ...[
+                    GlassCard(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('عرض المصمم', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        Text('${order['quotedPrice']} ر.س', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                        if (order['quoteDuration']?.toString().isNotEmpty ?? false) Text('مدة الإنجاز: ${order['quoteDuration']}'),
+                        if (order['quoteDeliveryDate']?.toString().isNotEmpty ?? false) Text('تاريخ التسليم: ${order['quoteDeliveryDate']}'),
+                        if (order['quoteMessage']?.toString().isNotEmpty ?? false) ...[
+                          const SizedBox(height: 8),
+                          Text(order['quoteMessage'].toString()),
+                        ],
+                      ]),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (widget.kind == 'design_request' && _currentRole == 'customer' && order['status'] == 'quoted') ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: (_acceptingOffer || _rejectingOffer) ? null : _rejectOffer,
+                            style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                            child: _rejectingOffer
+                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                : const Text('رفض العرض'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: (_acceptingOffer || _rejectingOffer) ? null : _acceptOffer,
+                            child: _acceptingOffer
+                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Text('قبول العرض'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (widget.kind == 'design_request' && _currentRole == 'designer' && order['status'] == 'accepted') ...[
+                    _statusActionButton(
+                      label: 'بدء التنفيذ',
+                      icon: Icons.play_arrow_rounded,
+                      onPressed: () => _updateDesignStatus('in_progress', 'تم بدء تنفيذ الطلب'),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (widget.kind == 'design_request' && _currentRole == 'designer' && order['status'] == 'in_progress') ...[
+                    _statusActionButton(
+                      label: 'إرسال للمراجعة',
+                      icon: Icons.task_alt,
+                      onPressed: () => _updateDesignStatus('ready', 'تم إرسال الطلب للعميل للمراجعة'),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (widget.kind == 'design_request' && _currentRole == 'customer' && order['status'] == 'ready') ...[
+                    _statusActionButton(
+                      label: 'اعتماد وإكمال الطلب',
+                      icon: Icons.verified_outlined,
+                      onPressed: () => _updateDesignStatus('completed', 'تم اعتماد الطلب وإكماله'),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   GlassCard(
                     padding: const EdgeInsets.all(18),
                     child: ListTile(
@@ -143,4 +276,17 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
       ),
     ),
   );
+
+  Widget _statusActionButton({required String label, required IconData icon, required VoidCallback onPressed}) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: _updatingStatus ? null : onPressed,
+        icon: _updatingStatus
+            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : Icon(icon),
+        label: Text(label),
+      ),
+    );
+  }
 }

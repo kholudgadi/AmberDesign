@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../services/api_client.dart';
+import '../services/orders_service.dart';
 import '../utils/app_colors.dart';
 import '../widgets/designer_app_background.dart';
 import '../widgets/designer_glass_card.dart';
+import 'track_order_screen.dart';
 
 class SendOfferScreen extends StatefulWidget {
   final Map<String, dynamic> request;
@@ -17,6 +20,7 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
   final _deliveryCtrl = TextEditingController();
   final _messageCtrl = TextEditingController(); 
   bool _isButtonEnabled = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -34,6 +38,44 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
       setState(() {
         _isButtonEnabled = isValid;
       });
+    }
+  }
+
+  double? _parsePrice(String raw) {
+    const digits = '٠١٢٣٤٥٦٧٨٩';
+    final normalized = raw.split('').map((char) {
+      final index = digits.indexOf(char);
+      return index < 0 ? char : index.toString();
+    }).join().replaceAll(',', '').trim();
+    return double.tryParse(normalized);
+  }
+
+  Future<void> _submitOffer() async {
+    final price = _parsePrice(_priceCtrl.text);
+    if (price == null || price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخلي سعرًا صحيحًا')));
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    try {
+      final quoted = await OrdersService.instance.sendOffer(
+        widget.request['id'].toString(),
+        price: price,
+        duration: _durationCtrl.text.trim(),
+        deliveryDate: _deliveryCtrl.text.trim(),
+        message: _messageCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال العرض بنجاح!')));
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => TrackOrderScreen(orderId: quoted['id'].toString(), kind: 'design_request')),
+        (route) => route.isFirst,
+      );
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -88,14 +130,7 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
                   const SizedBox(height: 40),
 
                   ElevatedButton(
-                    onPressed: _isButtonEnabled ? () {
-                      // 💡 التعديل هنا: استبدلنا GlobalData بـ SnackBar 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم إرسال العرض بنجاح!')),
-                      );
-                      Navigator.pop(context); // إغلاق صفحة إرسال العرض
-                      Navigator.pop(context); // العودة لصفحة الطلبات الرئيسية
-                    } : null,
+                    onPressed: (_isButtonEnabled && !_isSubmitting) ? _submitOffer : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isButtonEnabled 
                           ? const Color.fromRGBO(38, 23, 50, 0.8) 
@@ -105,7 +140,9 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                       elevation: _isButtonEnabled ? 8 : 0,
                     ),
-                    child: const Text('إرسال العرض', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: _isSubmitting
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('إرسال العرض', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -118,6 +155,9 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
   }
 
   Widget _buildRequestSummaryCard() {
+    final customer = widget.request['customer'] as Map<String, dynamic>?;
+    final urls = (widget.request['referenceUrls'] as List<dynamic>?) ?? const [];
+    final imageUrl = urls.isEmpty ? null : urls.first.toString();
     return DesignerGlassCard(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -138,7 +178,7 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${widget.request['clientName'] ?? 'عميل'} · ${widget.request['city'] ?? ''}', 
+                  '${customer?['displayName'] ?? 'عميل'} · ${customer?['city'] ?? ''}',
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textMuted,
@@ -149,15 +189,10 @@ class _SendOfferScreenState extends State<SendOfferScreen> {
           ),
           const SizedBox(width: 16),
           ClipOval(
-            child: Image.network(
-              // 💡 تفادي الخطأ لو كانت الصورة غير موجودة
-              (widget.request['images'] != null && widget.request['images'].isNotEmpty) 
-                  ? widget.request['images'][0] 
-                  : 'https://via.placeholder.com/150',
-              width: 70,
-              height: 70,
-              fit: BoxFit.cover,
-            ),
+            child: imageUrl == null
+                ? Container(width: 70, height: 70, color: AppColors.textMuted.withOpacity(0.15), child: const Icon(Icons.image_not_supported_outlined))
+                : Image.network(imageUrl, width: 70, height: 70, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(width: 70, height: 70, color: AppColors.textMuted.withOpacity(0.15), child: const Icon(Icons.broken_image_outlined))),
           ),
         ],
       ),

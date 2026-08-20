@@ -34,6 +34,8 @@ class OrdersService {
     required Map<String, String> specifications,
     required double serviceFee,
     required double platformFee,
+    List<String> referenceUrls = const [],
+    String? details,
   }) async {
     final response = await _api.post('/orders/design-requests', {
       'category': category,
@@ -41,6 +43,8 @@ class OrdersService {
       'specifications': specifications,
       'serviceFee': serviceFee,
       'platformFee': platformFee,
+      'referenceUrls': referenceUrls,
+      if (details != null && details.isNotEmpty) 'details': details,
     }, token: await AuthService.instance.accessToken());
     return response['data'] as Map<String, dynamic>;
   }
@@ -52,6 +56,48 @@ class OrdersService {
 
   Future<Map<String, dynamic>> claimDesignRequest(String id) async {
     final response = await _api.post('/orders/design-requests/$id/claim', const {}, token: await AuthService.instance.accessToken());
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> sendOffer(String id, {
+    required double price,
+    String? duration,
+    String? deliveryDate,
+    String? message,
+  }) async {
+    final response = await _api.post('/orders/design-requests/$id/quote', {
+      'price': price,
+      if (duration != null && duration.isNotEmpty) 'duration': duration,
+      if (deliveryDate != null && deliveryDate.isNotEmpty) 'deliveryDate': deliveryDate,
+      if (message != null && message.isNotEmpty) 'message': message,
+    }, token: await AuthService.instance.accessToken());
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> acceptOffer(String id) async {
+    final response = await _api.post(
+      '/orders/design-requests/$id/accept-quote',
+      const {},
+      token: await AuthService.instance.accessToken(),
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> rejectOffer(String id) async {
+    final response = await _api.post(
+      '/orders/design-requests/$id/reject-quote',
+      const {},
+      token: await AuthService.instance.accessToken(),
+    );
+    return response['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateDesignRequestStatus(String id, String status) async {
+    final response = await _api.patch(
+      '/orders/design-requests/$id/status',
+      {'status': status},
+      token: await AuthService.instance.accessToken(),
+    );
     return response['data'] as Map<String, dynamic>;
   }
 }

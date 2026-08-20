@@ -2,8 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
+import '../widgets/notification_bell.dart';
 import 'request_design_view.dart';
-import 'notifications_dialog.dart';
 
 class DesignerProfileScreen extends StatefulWidget {
   final Map<String, String> designer;
@@ -95,13 +95,7 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
           ),
           actions: [
             // Link notification button to the dialog and keep only the notification action.
-            IconButton(
-              icon: const Icon(
-                Icons.notifications_none,
-                color: AppColors.textDark,
-              ),
-              onPressed: () => showNotificationsDialog(context),
-            ),
+            const NotificationBell(),
           ],
         ),
         body: AppBackground(

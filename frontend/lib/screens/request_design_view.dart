@@ -1,5 +1,7 @@
 import 'dart:ui';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../utils/app_colors.dart';
 import '../screens/order_review_screen.dart';
 
@@ -27,6 +29,27 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   String? selectedStyle;
   String? selectedArea;
   // Budget input was removed based on the current requirement.
+
+  final _detailsController = TextEditingController();
+  final _imagePicker = ImagePicker();
+  final List<XFile> _pickedImages = [];
+  static const _maxImages = 5;
+
+  Future<void> _pickImages() async {
+    if (_pickedImages.length >= _maxImages) return;
+    final picked = await _imagePicker.pickMultiImage(imageQuality: 85);
+    if (!mounted || picked.isEmpty) return;
+    setState(() {
+      final remaining = _maxImages - _pickedImages.length;
+      _pickedImages.addAll(picked.take(remaining));
+    });
+  }
+
+  @override
+  void dispose() {
+    _detailsController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -343,6 +366,7 @@ class _RequestDesignViewState extends State<RequestDesignView> {
             border: Border.all(color: Colors.white.withOpacity(0.4)),
           ),
           child: TextField(
+            controller: _detailsController,
             maxLines: 4,
             style: const TextStyle(color: AppColors.textDark),
             decoration: InputDecoration(
@@ -363,8 +387,9 @@ class _RequestDesignViewState extends State<RequestDesignView> {
   }
 
   Widget _buildUploadBox() {
-    // Placeholder upload affordance for reference images or other files.
-    return Container(
+    return Column(children: [GestureDetector(
+      onTap: _pickImages,
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
@@ -381,22 +406,46 @@ class _RequestDesignViewState extends State<RequestDesignView> {
           const Icon(Icons.upload_file, color: AppColors.textDark, size: 32),
           const SizedBox(height: 8),
           const Text(
-            'اضغطي لرفع الملفات',
+            'اضغطي لرفع الصور',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: AppColors.textDark,
             ),
           ),
           Text(
-            'PDF, PNG, JPG',
+            'PNG, JPG — حتى 5 صور',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textMuted.withOpacity(0.8),
             ),
           ),
         ],
-      ),
-    );
+      )),
+    ),
+      if (_pickedImages.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        SizedBox(height: 84, child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _pickedImages.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, index) => Stack(children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FutureBuilder<Uint8List>(
+                future: _pickedImages[index].readAsBytes(),
+                builder: (_, snapshot) => snapshot.hasData
+                    ? Image.memory(snapshot.data!, width: 84, height: 84, fit: BoxFit.cover)
+                    : const SizedBox(width: 84, height: 84, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+              ),
+            ),
+            Positioned(top: 2, right: 2, child: GestureDetector(
+              onTap: () => setState(() => _pickedImages.removeAt(index)),
+              child: const CircleAvatar(radius: 11, backgroundColor: Colors.black87, child: Icon(Icons.close, size: 14, color: Colors.white)),
+            )),
+          ]),
+        )),
+      ],
+    ]);
   }
 
   Widget _buildNextButton() {
@@ -467,6 +516,8 @@ class _RequestDesignViewState extends State<RequestDesignView> {
                 orderDetails: collectedDetails,
                 serviceFee: 0.0, 
                 platformFee: 0.0,
+                details: _detailsController.text.trim(),
+                images: List<XFile>.from(_pickedImages),
               ),
             ),
           );

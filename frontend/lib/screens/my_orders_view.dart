@@ -47,12 +47,18 @@ class _MyOrdersViewState extends State<MyOrdersView> {
           child: Center(child: Text('لا توجد طلبات حقيقية في حسابك حتى الآن')),
         );
       }
-      return ListView.builder(
+      return RefreshIndicator(
+        onRefresh: () async {
+          setState(_reload);
+          await _orders;
+        },
+        child: ListView.builder(
         shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 100),
         itemCount: orders.length,
         itemBuilder: (_, index) => _orderCard(orders[index]),
+        ),
       );
     },
   );
@@ -91,7 +97,7 @@ class _MyOrdersViewState extends State<MyOrdersView> {
   String _statusLabel(String? status) => const {
     'pending_payment': 'بانتظار الدفع',
     'confirmed': 'تم تأكيد الطلب',
-    'accepted': 'قبل المصمم الطلب',
+    'accepted': 'تم قبول الطلب أو العرض',
     'in_progress': 'قيد التنفيذ',
     'ready': 'جاهز',
     'shipped': 'تم الشحن',
@@ -99,5 +105,7 @@ class _MyOrdersViewState extends State<MyOrdersView> {
     'cancelled': 'ملغي',
     'refunded': 'مسترجع',
     'submitted': 'تم إرسال الطلب',
+    'assigned': 'تم تعيين المصمم',
+    'quoted': 'وصلك عرض سعر من المصمم',
   }[status] ?? status ?? '';
 }

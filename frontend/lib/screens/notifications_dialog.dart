@@ -1,10 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../services/designer_service.dart';
 import '../utils/app_colors.dart';
 
 // دالة جاهزة تستدعيها من أي مكان لفتح الإشعارات
-void showNotificationsDialog(BuildContext context) {
-  showDialog(
+Future<void> showNotificationsDialog(BuildContext context) async {
+  await showDialog<void>(
     context: context,
     barrierColor: Colors.black.withOpacity(0.3),
     builder: (context) => const Directionality(
@@ -22,23 +23,46 @@ class _NotificationsContent extends StatefulWidget {
 }
 
 class _NotificationsContentState extends State<_NotificationsContent> {
-  // البيانات (isRead تحدد هل هو مقروء أو لا)
-  List<Map<String, dynamic>> notifications = [
-    {'title': 'نوف الأحمدي قبلت طلبك', 'sub': 'فستان سهرة ذهبي', 'time': 'منذ ٥ د', 'icon': Icons.star, 'iconColor': Colors.black87, 'isRead': false},
-    {'title': 'طلبك رقم #2341 قيد التجهيز', 'sub': 'تحديث حالة الطلب', 'time': 'منذ ٣٠ د', 'icon': Icons.inventory_2, 'iconColor': Colors.brown, 'isRead': false},
-    {'title': 'رسالة جديدة من مها الحربي', 'sub': 'هل يمكن تغيير الموعد؟', 'time': 'منذ ١ س', 'icon': Icons.chat_bubble, 'iconColor': Colors.purpleAccent, 'isRead': false},
-    {'title': 'تم إكمال تصميمك!', 'sub': 'فستان الزفاف الملكي جاهز', 'time': 'أمس', 'icon': Icons.celebration, 'iconColor': Colors.redAccent, 'isRead': true}, // مقروء سابقاً
-    {'title': 'قيّمي مصممتك', 'sub': 'شاركي تجربتك مع سارة الشمري', 'time': '٢ يوم', 'icon': Icons.star_border, 'iconColor': Colors.orange, 'isRead': true},
-  ];
+  List<Map<String, dynamic>> notifications = [];
+  bool _loading = true;
+  String? _error;
 
-  int get unreadCount => notifications.where((n) => n['isRead'] == false).length;
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  void _markAllAsRead() {
-    setState(() {
-      for (var n in notifications) {
-        n['isRead'] = true;
+  Future<void> _load() async {
+    try {
+      final result = await DesignerService.instance.notifications();
+      if (mounted) setState(() => notifications = result);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'تعذر تحميل الإشعارات');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  int get unreadCount => notifications.where((n) => n['readAt'] == null).length;
+
+  Future<void> _markAllAsRead() async {
+    final unread = notifications.where((item) => item['readAt'] == null).toList();
+    await Future.wait(unread.map((item) => DesignerService.instance.markNotificationRead(item['id'].toString())));
+    if (mounted) setState(() {
+      for (final item in notifications) {
+        item['readAt'] ??= DateTime.now().toIso8601String();
       }
     });
+  }
+
+  String _time(dynamic value) {
+    final created = DateTime.tryParse(value?.toString() ?? '');
+    if (created == null) return '';
+    final difference = DateTime.now().difference(created.toLocal());
+    if (difference.inMinutes < 60) return 'منذ ${difference.inMinutes} د';
+    if (difference.inHours < 24) return 'منذ ${difference.inHours} س';
+    return 'منذ ${difference.inDays} ي';
   }
 
   @override
@@ -75,7 +99,13 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                 
                 // قائمة الإشعارات
                 Expanded(
-                  child: ListView.separated(
+                  child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _error != null
+                    ? Center(child: Text(_error!))
+                    : notifications.isEmpty
+                    ? const Center(child: Text('لا توجد إشعارات'))
+                    : ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: notifications.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -83,7 +113,7 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                       final notif = notifications[index];
                       // 💡 هنا يتغير اللون، إذا مقروء يصير شفاف 50%
                       return Opacity(
-                        opacity: notif['isRead'] ? 0.6 : 1.0, 
+                        opacity: notif['readAt'] != null ? 0.6 : 1.0,
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -95,19 +125,19 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                             children: [
                               CircleAvatar(
                                 backgroundColor: Colors.white,
-                                child: Icon(notif['icon'], color: notif['iconColor'], size: 20),
+                                child: const Icon(Icons.notifications_outlined, color: AppColors.textDark, size: 20),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(notif['title'], style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                                    Text(notif['sub'], style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                                    Text(notif['titleAr']?.toString() ?? notif['titleEn']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                                    Text(notif['bodyAr']?.toString() ?? notif['bodyEn']?.toString() ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                                   ],
                                 ),
                               ),
-                              Text(notif['time'], style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                              Text(_time(notif['createdAt']), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
                             ],
                           ),
                         ),
