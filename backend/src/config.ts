@@ -13,6 +13,7 @@ const schema = z.object({
   FIREBASE_PROJECT_ID: z.string().min(1).optional(),
   FIREBASE_STORAGE_BUCKET: z.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
+  ALLOW_TEST_PHONE_BYPASS: z.enum(["true", "false"]).default("false").transform(value => value === "true"),
   PAYMENT_PROVIDER: z.enum(["mock", "hyperpay", "moyasar"]).default("mock"),
   PAYMENT_WEBHOOK_SECRET: z.string().min(8).default("replace-me"),
   MOYASAR_SECRET_KEY: z.string().min(1).optional(),

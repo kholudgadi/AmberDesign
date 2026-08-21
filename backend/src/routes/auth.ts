@@ -29,22 +29,38 @@ authRouter.post("/register", asyncHandler(async (req, res) => {
   const input = parse(z.object({
     email: z.string().email(), password: z.string().min(8).max(128),
     displayName: z.string().min(2).max(80), role: z.enum(["customer", "designer", "vendor"]).default("customer"),
-    language: z.enum(["ar", "en"]).default("ar"), phoneIdToken: z.string().min(100)
+    language: z.enum(["ar", "en"]).default("ar"),
+    phone: z.string().trim().min(7).max(20).optional(),
+    phoneIdToken: z.string().min(100).optional()
   }).strict(), req.body);
-  let decoded;
-  try {
-    decoded = await firebaseAuth.verifyIdToken(input.phoneIdToken, true);
-  } catch {
-    throw new ApiError(401, "Invalid or expired phone verification", "INVALID_PHONE_VERIFICATION");
-  }
-  const phone = decoded.phone_number;
-  if (!phone || decoded.firebase?.sign_in_provider !== "phone") {
-    throw new ApiError(422, "Firebase token does not prove phone ownership", "PHONE_NOT_VERIFIED");
+  const allowTestBypass = env.NODE_ENV !== "production" && env.ALLOW_TEST_PHONE_BYPASS;
+  let phone: string;
+  let firebaseUid: string | undefined;
+  if (allowTestBypass && input.phone) {
+    phone = input.phone;
+  } else {
+    if (!input.phoneIdToken) throw new ApiError(422, "Phone verification is required", "PHONE_VERIFICATION_REQUIRED");
+    let decoded;
+    try {
+      decoded = await firebaseAuth.verifyIdToken(input.phoneIdToken, true);
+    } catch {
+      throw new ApiError(401, "Invalid or expired phone verification", "INVALID_PHONE_VERIFICATION");
+    }
+    if (!decoded.phone_number || decoded.firebase?.sign_in_provider !== "phone") {
+      throw new ApiError(422, "Firebase token does not prove phone ownership", "PHONE_NOT_VERIFIED");
+    }
+    phone = decoded.phone_number;
+    firebaseUid = decoded.uid;
   }
   const email = input.email.toLowerCase();
   if (await prisma.user.findUnique({ where: { email } })) throw new ApiError(409, "Email already registered", "EMAIL_EXISTS");
-  if (await prisma.user.findFirst({ where: { OR: [{ phone }, { firebaseUid: decoded.uid }] } })) throw new ApiError(409, "Phone already registered", "PHONE_EXISTS");
-  const user = await prisma.user.create({ data: { email, phone, firebaseUid: decoded.uid, verified: true, passwordHash: await bcrypt.hash(input.password, 12), displayName: input.displayName, role: input.role, language: input.language } });
+  const duplicateConditions = firebaseUid ? [{ phone }, { firebaseUid }] : [{ phone }];
+  if (await prisma.user.findFirst({ where: { OR: duplicateConditions } })) throw new ApiError(409, "Phone already registered", "PHONE_EXISTS");
+  const user = await prisma.user.create({ data: {
+    email, phone, firebaseUid, verified: !allowTestBypass,
+    passwordHash: await bcrypt.hash(input.password, 12), displayName: input.displayName,
+    role: input.role, language: input.language
+  } });
   res.status(201).json({ data: { user: publicUser(user), ...(await issueTokens(user)) } });
 }));
 
