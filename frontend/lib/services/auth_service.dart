@@ -36,11 +36,13 @@ class AuthService {
     required String password,
     required String displayName,
     required String phone,
+    required String phoneIdToken,
     required bool isDesigner,
   }) async {
     final response = await _api.post('/auth/register', {
       'email': email.trim().toLowerCase(), 'password': password,
       'displayName': displayName.trim(), 'phone': phone.trim(),
+      'phoneIdToken': phoneIdToken,
       'role': isDesigner ? 'designer' : 'customer', 'language': 'ar',
     });
     return _saveSession(response);

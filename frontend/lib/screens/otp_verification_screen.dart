@@ -3,19 +3,27 @@ import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_background.dart';
 import '../widgets/custom_top_bar.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
+import '../services/phone_auth_service.dart';
 import 'home_screen.dart';
-import 'designer_domain_screen.dart'; // Imports the designer domain selection screen.
+import 'designer_home_screen.dart';
 
 /// Collects and validates a four-digit one-time passcode before entering the app.
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
-  final bool
-  isDesigner; // Determines whether the user follows the designer or customer path.
+  final String password;
+  final String displayName;
+  final String phone;
+  final bool isDesigner;
 
   const OtpVerificationScreen({
     super.key,
-    this.email = 'example@mail.com', // Default email if not provided.
-    this.isDesigner = false, // Default path is the customer flow.
+    required this.email,
+    required this.password,
+    required this.displayName,
+    required this.phone,
+    required this.isDesigner,
   });
 
   @override
@@ -23,16 +31,17 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  // List of TextEditingControllers for the 4 OTP input fields
+  // Firebase phone verification uses a six-digit code.
   final List<TextEditingController> _controllers = List.generate(
-    4,
+    6,
     (_) => TextEditingController(),
   );
 
   // Controls automatic keyboard focus movement between the individual digit fields.
-  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   bool _isOtpComplete = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -66,23 +75,43 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   // Routes the user to the next screen after the OTP is verified.
-  void _verifyOtpAndProceed() {
+  Future<void> _verifyOtpAndProceed() async {
     String otpCode = _controllers.map((c) => c.text).join();
-    debugPrint("الرمز المدخل هو: $otpCode");
-
-    if (widget.isDesigner) {
-      // Send designers to the domain-selection step.
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DesignerDomainScreen()),
+    setState(() => _isLoading = true);
+    try {
+      final phoneIdToken = await PhoneAuthService.instance.confirmCode(otpCode);
+      await AuthService.instance.register(
+        email: widget.email,
+        password: widget.password,
+        displayName: widget.displayName,
+        phone: widget.phone,
+        phoneIdToken: phoneIdToken,
+        isDesigner: widget.isDesigner,
       );
-    } else {
-      // Send customers directly to the home screen.
+      if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-        (Route<dynamic> route) => false,
+        MaterialPageRoute(builder: (_) => widget.isDesigner ? const DesignerHomeScreen() : const HomeScreen()),
+        (_) => false,
       );
+    } on PhoneAuthException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _resend() async {
+    setState(() => _isLoading = true);
+    try {
+      await PhoneAuthService.instance.sendCode(widget.phone);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال رمز جديد')));
+    } on PhoneAuthException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -126,7 +155,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         const SizedBox(height: 8),
 
                         Text(
-                          'تم إرسال رمز أمان مكون من 4 أرقام إلى\n${widget.email}',
+                          'تم إرسال رمز أمان مكون من 6 أرقام إلى\n${widget.phone}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 15,
@@ -142,7 +171,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: List.generate(
-                              4,
+                              6,
                               (index) => _buildOtpBox(index),
                             ),
                           ),
@@ -161,9 +190,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () {
-                                debugPrint("إعادة إرسال الرمز...");
-                              },
+                              onTap: _isLoading ? null : _resend,
                               child: const Text(
                                 'إعادة إرسال',
                                 style: TextStyle(
@@ -180,7 +207,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         const SizedBox(height: 40),
 
                         ElevatedButton(
-                          onPressed: _isOtpComplete
+                          onPressed: _isOtpComplete && !_isLoading
                               ? _verifyOtpAndProceed // Calls the OTP verification and navigation handler.
                               : null,
                           style: ElevatedButton.styleFrom(
@@ -195,9 +222,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ),
                             elevation: _isOtpComplete ? 8 : 0,
                           ),
-                          child: const Text(
-                            'تأكيد',
-                            style: TextStyle(
+                          child: _isLoading
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text(
+                            'تأكيد', style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -256,7 +284,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ],
         onChanged: (value) {
           if (value.isNotEmpty) {
-            if (index < 3) {
+            if (index < 5) {
               _focusNodes[index + 1].requestFocus();
             } else {
               _focusNodes[index].unfocus();

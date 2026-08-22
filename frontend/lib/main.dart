@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 // This import links the main file to your newly created splash screen
 import 'screens/splash_screen.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 import 'utils/app_colors.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Starts the Flutter widget tree with the application's root configuration.
   runApp(const AmberDesignApp());
 }

@@ -4,9 +4,8 @@ import '../widgets/custom_top_bar.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/app_background.dart';
 import '../services/api_client.dart';
-import '../services/auth_service.dart';
-import 'home_screen.dart';
-import 'designer_home_screen.dart';
+import '../services/phone_auth_service.dart';
+import 'otp_verification_screen.dart';
 class SignupScreen extends StatefulWidget {
   final bool isDesigner;
 
@@ -75,24 +74,17 @@ class _SignupScreenState extends State<SignupScreen> {
     }
     setState(() => _isLoading = true);
     try {
-      await AuthService.instance.register(
-        email: _emailController.text,
-        password: _passwordController.text,
-        displayName: _nameController.text,
-        phone: _phoneController.text,
-        isDesigner: widget.isDesigner,
-      );
+      await PhoneAuthService.instance.sendCode(_phoneController.text);
       if (!mounted) return;
-      if (widget.isDesigner) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DesignerHomeScreen()),
-        );
-      } else {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (_) => false,
-        );
-      }
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => OtpVerificationScreen(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        displayName: _nameController.text.trim(),
+        phone: PhoneAuthService.instance.normalizePhone(_phoneController.text),
+        isDesigner: widget.isDesigner,
+      )));
+    } on PhoneAuthException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
     } on ApiException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "956480668898",
+    "project_id": "amberdesign-16679",
+    "storage_bucket": "amberdesign-16679.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:956480668898:android:24b5e7b006e30c876f8abb",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkhDb-SfdKkBvYmUTQ0tuno3AqMbKvNZk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
